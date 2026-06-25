@@ -12,7 +12,9 @@ export default defineSchema({
       v.literal("branch_staff"),
       v.literal("vendor")
     ),
-    branchId: v.optional(v.id("branches")), // Associates branch staff with a specific branch
+    branchId: v.optional(v.id("branches")),
+    phone: v.optional(v.string()),
+    active: v.boolean(),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
 
@@ -24,6 +26,7 @@ export default defineSchema({
     city: v.string(),
     contactNumber: v.string(),
     email: v.string(),
+    status: v.union(v.literal("active"), v.literal("inactive")),
     createdAt: v.number(),
   }).index("by_code", ["code"]),
 
@@ -32,11 +35,14 @@ export default defineSchema({
     trackingNumber: v.string(), // Unique tracking code
     senderName: v.string(),
     senderContact: v.string(),
+    senderAddress: v.optional(v.string()),
     receiverName: v.string(),
     receiverAddress: v.string(),
     receiverContact: v.string(),
-    packageType: v.string(), // e.g., "Document", "Box", "Fragile"
+    packageType: v.string(),
     weight: v.number(),
+    dimensions: v.optional(v.string()),
+    description: v.optional(v.string()),
     status: v.union(
       v.literal("booked"),
       v.literal("in_transit"),
@@ -63,6 +69,7 @@ export default defineSchema({
     contactNumber: v.string(),
     email: v.string(),
     address: v.string(),
+    partnerType: v.string(),
     status: v.union(v.literal("active"), v.literal("inactive")),
     createdAt: v.number(),
   }),

@@ -3,22 +3,22 @@ import { v } from "convex/values";
 
 export const list = query({
   handler: async (ctx) => {
-    return await ctx.db.query("branches").collect();
+    return await ctx.db.query("vendors").collect();
   },
 });
 
 export const create = mutation({
   args: {
     name: v.string(),
-    code: v.string(),
-    address: v.string(),
-    city: v.string(),
+    contactPerson: v.string(),
     contactNumber: v.string(),
     email: v.string(),
+    address: v.string(),
+    partnerType: v.string(),
     status: v.union(v.literal("active"), v.literal("inactive")),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("branches", {
+    return await ctx.db.insert("vendors", {
       ...args,
       createdAt: Date.now(),
     });
@@ -27,28 +27,28 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    branchId: v.id("branches"),
+    vendorId: v.id("vendors"),
     name: v.optional(v.string()),
-    code: v.optional(v.string()),
-    address: v.optional(v.string()),
-    city: v.optional(v.string()),
+    contactPerson: v.optional(v.string()),
     contactNumber: v.optional(v.string()),
     email: v.optional(v.string()),
+    address: v.optional(v.string()),
+    partnerType: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
   },
   handler: async (ctx, args) => {
-    const { branchId, ...fields } = args;
+    const { vendorId, ...fields } = args;
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) patch[key] = value;
     }
-    await ctx.db.patch(branchId, patch);
+    await ctx.db.patch(vendorId, patch);
   },
 });
 
 export const remove = mutation({
-  args: { branchId: v.id("branches") },
+  args: { vendorId: v.id("vendors") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.branchId, { status: "inactive" });
+    await ctx.db.patch(args.vendorId, { status: "inactive" });
   },
 });

@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import { hashPassword } from "./auth";
 
 export const seedDatabase = mutation({
   args: {},
@@ -17,6 +18,7 @@ export const seedDatabase = mutation({
       city: "Kathmandu",
       contactNumber: "01-4455667",
       email: "ktm@logikeep.com.np",
+      status: "active",
       createdAt: Date.now(),
     });
 
@@ -27,6 +29,7 @@ export const seedDatabase = mutation({
       city: "Pokhara",
       contactNumber: "061-552233",
       email: "pkr@logikeep.com.np",
+      status: "active",
       createdAt: Date.now(),
     });
 
@@ -37,6 +40,7 @@ export const seedDatabase = mutation({
       city: "Dharan",
       contactNumber: "025-520112",
       email: "dhn@logikeep.com.np",
+      status: "active",
       createdAt: Date.now(),
     });
 
@@ -45,8 +49,9 @@ export const seedDatabase = mutation({
       name: "Fast Cargo Nepal",
       contactPerson: "Sajan Shrestha",
       contactNumber: "9851000001",
-      email: "sajan@fastcargo.com.np",
+      email: "vendor@logikeep.com.np",
       address: "Chabahil, Kathmandu",
+      partnerType: "Courier",
       status: "active",
       createdAt: Date.now(),
     });
@@ -57,6 +62,7 @@ export const seedDatabase = mutation({
       contactNumber: "9841223344",
       email: "ram@nepalcargo.com.np",
       address: "Birgunj, Parsa",
+      partnerType: "Supplier",
       status: "active",
       createdAt: Date.now(),
     });
@@ -66,18 +72,28 @@ export const seedDatabase = mutation({
     await ctx.db.insert("users", {
       name: "Administrator",
       email: "admin@logikeep.com.np",
-      passwordHash: "admin123", // For development purposes
+      passwordHash: hashPassword("admin123"),
       role: "admin",
+      active: true,
       createdAt: Date.now(),
     });
 
-    // Branch Staff
     await ctx.db.insert("users", {
       name: "Dharan Staff",
       email: "dharan@logikeep.com.np",
-      passwordHash: "dharan123",
+      passwordHash: hashPassword("dharan123"),
       role: "branch_staff",
       branchId: dhnId,
+      active: true,
+      createdAt: Date.now(),
+    });
+
+    await ctx.db.insert("users", {
+      name: "Hari Prasad",
+      email: "vendor@logikeep.com.np",
+      passwordHash: hashPassword("vendor123"),
+      role: "vendor",
+      active: true,
       createdAt: Date.now(),
     });
 
@@ -111,11 +127,14 @@ export const seedDatabase = mutation({
       trackingNumber: "LK-KTM-PKR-001",
       senderName: "Aarav Sharma",
       senderContact: "9801234567",
+      senderAddress: "Baneshwor, Kathmandu",
       receiverName: "Prerna Joshi",
       receiverAddress: "Mahendrapool, Pokhara",
       receiverContact: "9812345678",
       packageType: "Document",
       weight: 0.5,
+      dimensions: "30 x 20 x 5 cm",
+      description: "Legal documents",
       status: "booked",
       originBranchId: ktmId,
       destinationBranchId: pkrId,
