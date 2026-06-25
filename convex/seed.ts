@@ -413,3 +413,28 @@ export const seedDatabase = mutation({
     return "Database successfully seeded with richer branches, vendors, users, inventory, and tracking details!";
   },
 });
+
+export const clearDatabase = mutation({
+  args: {},
+  handler: async (ctx) => {
+    for (const u of await ctx.db.query("users").collect()) {
+      await ctx.db.delete(u._id);
+    }
+    for (const b of await ctx.db.query("branches").collect()) {
+      await ctx.db.delete(b._id);
+    }
+    for (const v of await ctx.db.query("vendors").collect()) {
+      await ctx.db.delete(v._id);
+    }
+    for (const p of await ctx.db.query("packages").collect()) {
+      await ctx.db.delete(p._id);
+    }
+    for (const i of await ctx.db.query("inventory").collect()) {
+      await ctx.db.delete(i._id);
+    }
+    for (const l of await ctx.db.query("movementLogs").collect()) {
+      await ctx.db.delete(l._id);
+    }
+    return "Database cleared!";
+  },
+});
