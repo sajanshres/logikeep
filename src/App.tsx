@@ -191,7 +191,7 @@ export default function App() {
       setNotifyBooking(saved.notifyBooking ?? true);
       setNotifyWeekly(saved.notifyWeekly ?? false);
     } catch {
-      // ignore bad local settings
+      // just catch errors if parsing fails
     }
   }, []);
 
@@ -205,7 +205,7 @@ export default function App() {
       if (saved.reportBranch) setReportBranch(saved.reportBranch);
       if (saved.reportPartner) setReportPartner(saved.reportPartner);
     } catch {
-      // ignore
+      // ignore errors
     }
   }, []);
 
@@ -218,7 +218,7 @@ export default function App() {
     backfillPhase3({})
       .then(() => localStorage.setItem("logikeep-phase3-backfill-v2", "1"))
       .catch(() => {
-        // Convex may not be ready yet; will retry next load
+        // backend might not be ready yet, will retry on next render
       });
   }, [backfillPhase3]);
 

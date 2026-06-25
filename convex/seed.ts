@@ -4,13 +4,13 @@ import { hashPassword } from "./auth";
 export const seedDatabase = mutation({
   args: {},
   handler: async (ctx) => {
-    // 1. Check if database is already populated
+    // check if database is already seeded
     const existingBranches = await ctx.db.query("branches").collect();
     if (existingBranches.length > 0) {
       return "Database already seeded";
     }
 
-    // 2. Add Branches
+    // add mock branches
     const ktmId = await ctx.db.insert("branches", {
       name: "Kathmandu Main Hub",
       code: "KTM",
@@ -44,7 +44,7 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // 3. Add Vendors/Suppliers
+    // add transport vendors
     const fastCargoId = await ctx.db.insert("vendors", {
       name: "Fast Cargo Nepal",
       contactPerson: "Sajan Shrestha",
@@ -67,8 +67,7 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // 4. Add Users
-    // Admin User
+    // add default users
     await ctx.db.insert("users", {
       name: "Administrator",
       email: "admin@logikeep.com.np",
@@ -97,7 +96,7 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // 5. Add Inventory/Products
+    // add inventory supplies for testing
     await ctx.db.insert("inventory", {
       productName: "Thermal Labels 4x6",
       category: "Consumables",
@@ -122,7 +121,7 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
-    // 6. Add Packages
+    // add some package entries
     const pkg1Id = await ctx.db.insert("packages", {
       trackingNumber: "LK-KTM-PKR-001",
       senderName: "Aarav Sharma",
@@ -143,7 +142,7 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
-    // 7. Add Movement Log for Package 1
+    // add activity logs for tracking progress
     await ctx.db.insert("movementLogs", {
       packageId: pkg1Id,
       status: "booked",

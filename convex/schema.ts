@@ -2,11 +2,11 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  // User profiles and role-based access control (RBAC)
+  // users and roles (admin, staff, vendor)
   users: defineTable({
     name: v.string(),
     email: v.string(),
-    passwordHash: v.string(), // Simple hash for local/development storage
+    passwordHash: v.string(), // just simple hashes for local testing
     role: v.union(
       v.literal("admin"),
       v.literal("branch_staff"),
@@ -18,10 +18,10 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_email", ["email"]),
 
-  // Branches/Offices handling logistics and transfers
+  // branches / locations
   branches: defineTable({
     name: v.string(),
-    code: v.string(), // e.g., KTM, PKR, DHN
+    code: v.string(), // KTM, PKR, DHN
     address: v.string(),
     city: v.string(),
     contactNumber: v.string(),
@@ -30,9 +30,9 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_code", ["code"]),
 
-  // Packages/Shipments details
+  // packages / shipments
   packages: defineTable({
-    trackingNumber: v.string(), // Unique tracking code
+    trackingNumber: v.string(), // unique tracking number
     senderName: v.string(),
     senderContact: v.string(),
     senderAddress: v.optional(v.string()),
@@ -54,7 +54,7 @@ export default defineSchema({
     originBranchId: v.id("branches"),
     destinationBranchId: v.id("branches"),
     currentBranchId: v.id("branches"),
-    assignedVendorId: v.optional(v.id("vendors")), // Assigned carrier or transport supplier
+    assignedVendorId: v.optional(v.id("vendors")), // vendor handling this package
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -62,7 +62,7 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_current_branch", ["currentBranchId"]),
 
-  // Vendors/Suppliers/Carriers
+  // vendors / suppliers
   vendors: defineTable({
     name: v.string(),
     contactPerson: v.string(),
@@ -74,25 +74,25 @@ export default defineSchema({
     createdAt: v.number(),
   }),
 
-  // Inventory/Product records
+  // inventory items
   inventory: defineTable({
     productName: v.string(),
     category: v.string(),
-    sku: v.string(), // Stock Keeping Unit
+    sku: v.string(), // SKU code
     quantity: v.number(),
     lowStockAlert: v.number(),
-    vendorId: v.id("vendors"), // Associated supplier
+    vendorId: v.id("vendors"), // supplier who provides it
     price: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_sku", ["sku"]),
 
-  // Logs for package/shipment tracking updates
+  // logs of tracking updates
   movementLogs: defineTable({
     packageId: v.id("packages"),
     status: v.string(),
     locationBranchId: v.id("branches"),
-    details: v.string(), // Description of movement, e.g., "Received at Kathmandu Branch"
+    details: v.string(), // e.g., "Received at Kathmandu Branch"
     timestamp: v.number(),
     updatedById: v.id("users"), // User who recorded this update
   }).index("by_package", ["packageId"]),

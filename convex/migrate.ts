@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { hashPassword } from "./auth";
 
-/** Backfill new schema fields on existing rows after Phase 3 schema changes. */
+// run this to fix old data in the database with the new columns so schema validation works
 export const backfillPhase3 = mutation({
   args: {},
   handler: async (ctx) => {
