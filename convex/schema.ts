@@ -109,5 +109,5 @@ export default defineSchema({
     notes: v.optional(v.string()),
     updatedById: v.id("users"),
     timestamp: v.number(),
-  }).index("by_product", ["productId"]),
+  }).index("by_product", ["productId"]).index("by_timestamp", ["timestamp"]),
 });

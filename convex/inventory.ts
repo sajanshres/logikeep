@@ -33,11 +33,49 @@ export const createProduct = mutation({
       type: "adjustment",
       quantityChanged: args.quantity,
       notes: "Initial stock registration",
-      updatedById: args.updatedById,
+      updatedById,
       timestamp: Date.now(),
     });
 
     return productId;
+  },
+});
+
+export const updateProduct = mutation({
+  args: {
+    productId: v.id("inventory"),
+    productName: v.optional(v.string()),
+    category: v.optional(v.string()),
+    sku: v.optional(v.string()),
+    lowStockAlert: v.optional(v.number()),
+    vendorId: v.optional(v.id("vendors")),
+    price: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { productId, ...fields } = args;
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) patch[key] = value;
+    }
+    await ctx.db.patch(productId, patch);
+  },
+});
+
+export const removeProduct = mutation({
+  args: {
+    productId: v.id("inventory"),
+  },
+  handler: async (ctx, args) => {
+    const movements = await ctx.db
+      .query("stockMovements")
+      .withIndex("by_product", (q) => q.eq("productId", args.productId))
+      .collect();
+
+    if (movements.length > 0) {
+      throw new Error("Cannot delete a product with stock movement history. Keep it for audit records.");
+    }
+
+    await ctx.db.delete(args.productId);
   },
 });
 

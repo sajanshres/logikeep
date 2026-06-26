@@ -7,6 +7,7 @@ This is my logistics ERP college project. I used React, TypeScript, Vite, and Co
 - **Packages**: Book packages and update where they are (booked, in transit, etc).
 - **Users**: Admin, staff, and vendor roles.
 - **Inventory**: Added inventory management. You can manage boxes, thermal labels, change stock amounts, and it has low stock warnings.
+- **Reports**: Shipment ledger, stock movement ledger, and CSV export.
 
 ## Tech stack
 - Vite with React
@@ -28,3 +29,4 @@ This is my logistics ERP college project. I used React, TypeScript, Vite, and Co
 - `packages`: package details and status
 - `inventory`: storage items
 - `movementLogs`: tracking details
+- `stockMovements`: purchase, sale, and adjustment history

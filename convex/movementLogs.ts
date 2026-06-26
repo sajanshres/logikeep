@@ -5,11 +5,10 @@ import { v } from "convex/values";
 export const getByPackage = query({
   args: { packageId: v.id("packages") },
   handler: async (ctx, args) => {
-    const logs = await ctx.db
+    return await ctx.db
       .query("movementLogs")
       .withIndex("by_package", (q) => q.eq("packageId", args.packageId))
+      .order("asc")
       .collect();
-    
-    return logs.sort((a, b) => a.timestamp - b.timestamp);
   },
 });

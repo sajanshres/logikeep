@@ -8,6 +8,23 @@ export const list = query({
   },
 });
 
+export const listPublic = query({
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users.map((user) => ({
+      _id: user._id,
+      _creationTime: user._creationTime,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      branchId: user.branchId,
+      phone: user.phone,
+      active: user.active,
+      createdAt: user.createdAt,
+    }));
+  },
+});
+
 export const getByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {

@@ -18,6 +18,33 @@ type AppSettings = {
   notifyWeekly: boolean;
 };
 
+type ShipmentStatus = "booked" | "in_transit" | "arrived_at_branch" | "out_for_delivery" | "delivered" | "returned";
+type LogisticsAction = "dispatch" | "deliver" | "statusUpdate" | "return" | "forward";
+
+interface LogisticsModalState {
+  action: LogisticsAction;
+  packageId: Id<"packages">;
+}
+
+interface LogisticsUpdatePayload {
+  packageId: Id<"packages">;
+  status: ShipmentStatus;
+  currentBranchId: Id<"branches">;
+  details: string;
+  updatedById: Id<"users">;
+  driverName?: string;
+  vehicleNumber?: string;
+  receivedBy?: string;
+  deliveryNotes?: string;
+}
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  detail: string;
+  tone: "info" | "success" | "warning";
+}
+
 function weeklyPackageCounts(packages: { createdAt: number }[], buckets = 5) {
   const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
@@ -152,6 +179,7 @@ export default function App() {
   const [editingBranchId, setEditingBranchId] = useState<Id<"branches"> | null>(null);
   const [editingVendorId, setEditingVendorId] = useState<Id<"vendors"> | null>(null);
   const [editingPackageId, setEditingPackageId] = useState<Id<"packages"> | null>(null);
+  const [editingProductId, setEditingProductId] = useState<Id<"inventory"> | null>(null);
 
   const [portalName, setPortalName] = useState<string>("LogiKeep");
   const [defaultBranch, setDefaultBranch] = useState<string>("");
@@ -164,15 +192,26 @@ export default function App() {
   const [securityCurrent, setSecurityCurrent] = useState<string>("");
   const [securityNew, setSecurityNew] = useState<string>("");
   const [securityConfirm, setSecurityConfirm] = useState<string>("");
+  const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
+  const [logisticsModal, setLogisticsModal] = useState<LogisticsModalState | null>(null);
+  const [logisticsStatus, setLogisticsStatus] = useState<ShipmentStatus>("in_transit");
+  const [logisticsBranchId, setLogisticsBranchId] = useState<string>("");
+  const [logisticsDriverName, setLogisticsDriverName] = useState<string>("");
+  const [logisticsVehicleNumber, setLogisticsVehicleNumber] = useState<string>("");
+  const [logisticsReceivedBy, setLogisticsReceivedBy] = useState<string>("");
+  const [logisticsDeliveryNotes, setLogisticsDeliveryNotes] = useState<string>("");
+  const [logisticsDetails, setLogisticsDetails] = useState<string>("");
 
   // Convex queries
-  const dbUsers = useQuery(api.users.list) ?? [];
+  const dbUsers = useQuery(api.users.listPublic) ?? [];
   const dbBranches = useQuery(api.branches.list) ?? [];
   const dbPackages = useQuery(api.packages.list) ?? [];
   const dbVendors = useQuery(api.vendors.list) ?? [];
   const dbInventory = useQuery(api.inventory.list) ?? [];
   const dbMovements = useQuery(api.inventory.getMovements, txProductId ? { productId: txProductId } : "skip") ?? [];
   const dbAllMovements = useQuery(api.inventory.getAllMovements) ?? [];
+  const authLoginUser = useQuery(api.users.getByEmail, loginEmail ? { email: loginEmail } : "skip");
+  const authSessionUser = useQuery(api.users.getByEmail, loggedInUser && activeTab === "settings" ? { email: loggedInUser.email } : "skip");
 
   // Convex mutations
   const createUser = useMutation(api.users.create);
@@ -187,6 +226,8 @@ export default function App() {
   const updateVendor = useMutation(api.vendors.update);
   const removeVendor = useMutation(api.vendors.remove);
   const createProduct = useMutation(api.inventory.createProduct);
+  const updateProduct = useMutation(api.inventory.updateProduct);
+  const removeProduct = useMutation(api.inventory.removeProduct);
   const updateStock = useMutation(api.inventory.updateStock);
   const backfillPhase3 = useMutation(api.migrate.backfillPhase3);
   const updateStatus = useMutation(api.packages.updateStatus);
@@ -238,7 +279,7 @@ export default function App() {
   // Login handler
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const user = dbUsers.find((u) => u.email.toLowerCase() === loginEmail.toLowerCase());
+    const user = authLoginUser;
     if (user && (user.active ?? true) && verifyPassword(loginPassword, user.passwordHash)) {
       const roleMap: Record<string, "Admin" | "Branch Staff" | "Vendor"> = {
         admin: "Admin",
@@ -315,6 +356,17 @@ export default function App() {
     setPackageModalTab(1);
   };
 
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setNewProductName("");
+    setNewProductCategory("Consumables");
+    setNewProductSku("");
+    setNewProductQty("0");
+    setNewProductAlert("10");
+    setNewProductPrice("0");
+    setNewProductVendorIdx(0);
+  };
+
   const parseDimensions = (dims?: string) => {
     if (!dims) return { l: "", w: "", h: "" };
     const parts = dims.replace(/cm/i, "").split("x").map((s) => s.trim());
@@ -379,6 +431,53 @@ export default function App() {
     setModalOpen("package");
   };
 
+  const openEditProduct = (item: (typeof dbInventory)[0]) => {
+    setEditingProductId(item._id);
+    setNewProductName(item.productName);
+    setNewProductCategory(item.category);
+    setNewProductSku(item.sku);
+    setNewProductQty(String(item.quantity));
+    setNewProductAlert(String(item.lowStockAlert));
+    setNewProductPrice(String(item.price));
+    const vendorIndex = dbVendors.findIndex((v) => v._id === item.vendorId);
+    setNewProductVendorIdx(vendorIndex >= 0 ? vendorIndex : 0);
+    setModalOpen("inventory");
+  };
+
+  const resetLogisticsModal = () => {
+    setLogisticsModal(null);
+    setLogisticsStatus("in_transit");
+    setLogisticsBranchId("");
+    setLogisticsDriverName("");
+    setLogisticsVehicleNumber("");
+    setLogisticsReceivedBy("");
+    setLogisticsDeliveryNotes("");
+    setLogisticsDetails("");
+  };
+
+  const openLogisticsModal = (action: LogisticsAction, packageId: Id<"packages">) => {
+    const shipment = dbPackages.find((pkg) => pkg._id === packageId);
+    const branchId = loggedInDbUser?.branchId ? String(loggedInDbUser.branchId) : "";
+    const initialStatus: ShipmentStatus = action === "deliver"
+      ? "delivered"
+      : action === "return"
+        ? "returned"
+        : action === "forward"
+          ? "in_transit"
+          : action === "dispatch"
+            ? "in_transit"
+            : shipment?.status as ShipmentStatus || "booked";
+
+    setLogisticsModal({ action, packageId });
+    setLogisticsStatus(initialStatus);
+    setLogisticsBranchId(action === "forward" ? "" : shipment ? String(shipment.currentBranchId) : branchId);
+    setLogisticsDriverName(shipment?.driverName || "");
+    setLogisticsVehicleNumber(shipment?.vehicleNumber || "");
+    setLogisticsReceivedBy(shipment?.receivedBy || "");
+    setLogisticsDeliveryNotes(shipment?.deliveryNotes || "");
+    setLogisticsDetails("");
+  };
+
   const saveSettings = () => {
     const payload: AppSettings = {
       portalName,
@@ -396,7 +495,7 @@ export default function App() {
 
   const handleUpdatePassword = async () => {
     if (!loggedInUser) return;
-    const user = dbUsers.find((u) => u.email.toLowerCase() === loggedInUser.email.toLowerCase());
+    const user = authSessionUser;
     if (!user) return;
     if (!verifyPassword(securityCurrent, user.passwordHash)) {
       alert("Current password is incorrect.");
@@ -421,6 +520,7 @@ export default function App() {
   const handleLogout = () => {
     setLoggedInUser(null);
     setActiveTab("dashboard");
+    setNotificationsOpen(false);
   };
 
   const handleSaveUser = async (e: React.FormEvent) => {
@@ -561,29 +661,40 @@ export default function App() {
     setModalOpen(null);
   };
 
-  // Add inventory product
-  const handleAddProduct = async (e: React.FormEvent) => {
+  // Add or edit inventory product
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loggedInDbUser) return;
     if (dbVendors.length < 1) {
       alert("Add at least one vendor first.");
       return;
     }
     const vendor = dbVendors[newProductVendorIdx] || dbVendors[0];
-    await createProduct({
-      productName: newProductName,
-      category: newProductCategory,
-      sku: newProductSku,
-      quantity: parseInt(newProductQty) || 0,
-      lowStockAlert: parseInt(newProductAlert) || 10,
-      vendorId: vendor._id,
-      price: parseFloat(newProductPrice) || 0,
-      updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any,
-    });
-    setNewProductName("");
-    setNewProductSku("");
-    setNewProductQty("0");
-    setNewProductAlert("10");
-    setNewProductPrice("0");
+
+    if (editingProductId) {
+      await updateProduct({
+        productId: editingProductId,
+        productName: newProductName,
+        category: newProductCategory,
+        sku: newProductSku,
+        lowStockAlert: parseInt(newProductAlert) || 10,
+        vendorId: vendor._id,
+        price: parseFloat(newProductPrice) || 0,
+      });
+    } else {
+      await createProduct({
+        productName: newProductName,
+        category: newProductCategory,
+        sku: newProductSku,
+        quantity: parseInt(newProductQty) || 0,
+        lowStockAlert: parseInt(newProductAlert) || 10,
+        vendorId: vendor._id,
+        price: parseFloat(newProductPrice) || 0,
+        updatedById: loggedInDbUser._id,
+      });
+    }
+
+    resetProductForm();
     setModalOpen(null);
   };
 
@@ -607,7 +718,7 @@ export default function App() {
       type: txType,
       quantityChanged: appliedChange,
       notes: txNotes,
-      updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any,
+      updatedById: loggedInDbUser!._id,
     });
     
     setModalOpen(null);
@@ -670,6 +781,7 @@ export default function App() {
 
   const trackedPackage = trackedPkgIdx >= 0 ? dbPackages[trackedPkgIdx] : null;
   const trackedMovementLogs = useQuery(api.movementLogs.getByPackage, trackedPackage ? { packageId: trackedPackage._id } : "skip") ?? [];
+  const logisticsShipment = logisticsModal ? dbPackages.find((pkg) => pkg._id === logisticsModal.packageId) : null;
 
   // Helper to get branch name by ID
   const branchName = (id: string | undefined) => {
@@ -722,12 +834,81 @@ export default function App() {
     return titles[tab] || tab;
   };
 
-  const activeShipments = dbPackages.filter((p) => p.status !== "delivered" && p.status !== "returned").length;
-  const deliveredCount = dbPackages.filter((p) => p.status === "delivered").length;
-  const successRate = dbPackages.length > 0 ? Math.round((deliveredCount / dbPackages.length) * 100) : 0;
+  const loggedInDbUser = loggedInUser
+    ? dbUsers.find((u) => u.email.toLowerCase() === loggedInUser.email.toLowerCase())
+    : undefined;
+  const matchedVendor = loggedInUser
+    ? dbVendors.find((v) => v.email.toLowerCase() === loggedInUser.email.toLowerCase())
+    : undefined;
+  const branchScopedPackages = loggedInDbUser?.branchId
+    ? dbPackages.filter((p) => p.originBranchId === loggedInDbUser.branchId || p.currentBranchId === loggedInDbUser.branchId || p.destinationBranchId === loggedInDbUser.branchId)
+    : dbPackages;
+  const vendorPackages = loggedInUser?.role === "Vendor" && matchedVendor
+    ? dbPackages.filter((p) => p.assignedVendorId === matchedVendor._id)
+    : [];
+  const visiblePackages = loggedInUser?.role === "Vendor" && matchedVendor
+    ? vendorPackages
+    : loggedInUser?.role === "Branch Staff"
+      ? branchScopedPackages
+      : dbPackages;
+  const dashboardPackages = visiblePackages;
+  const notificationPackages = visiblePackages;
+  const vendorPickupPackages = vendorPackages.filter((p) => p.status === "booked");
+  const vendorInvoicePackages = vendorPackages.filter((p) => p.status === "delivered");
+  const lowStockItems = notifyLowStock ? dbInventory.filter((item) => item.quantity <= item.lowStockAlert) : [];
+  const deliveryNotifications = notifyDelivery
+    ? notificationPackages
+        .filter((p) => p.status === "delivered")
+        .slice()
+        .reverse()
+        .slice(0, 5)
+        .map((p) => ({
+          id: `delivered-${p._id}`,
+          title: `Delivered: ${p.trackingNumber}`,
+          detail: `${branchName(p.destinationBranchId)} · ${new Date(p.updatedAt).toLocaleDateString()}`,
+          tone: "success" as const,
+        }))
+    : [];
+  const bookingNotifications = notifyBooking
+    ? notificationPackages
+        .filter((p) => p.status === "booked")
+        .slice()
+        .reverse()
+        .slice(0, 5)
+        .map((p) => ({
+          id: `booked-${p._id}`,
+          title: `New booking: ${p.trackingNumber}`,
+          detail: `${branchName(p.originBranchId)} → ${branchName(p.destinationBranchId)}`,
+          tone: "info" as const,
+        }))
+    : [];
+  const lowStockNotifications = lowStockItems.map((item) => ({
+    id: `low-${item._id}`,
+    title: `Low stock: ${item.productName}`,
+    detail: `${item.quantity} left · alert ${item.lowStockAlert}`,
+    tone: "warning" as const,
+  }));
+  const weeklySummaryNotifications = notifyWeekly
+    ? [{
+        id: "weekly-summary",
+        title: "Weekly summary ready",
+        detail: `${dashboardPackages.length} shipments in your current view`,
+        tone: "info" as const,
+      }]
+    : [];
+  const notificationItems: NotificationItem[] = [
+    ...lowStockNotifications,
+    ...deliveryNotifications,
+    ...bookingNotifications,
+    ...weeklySummaryNotifications,
+  ];
+
+  const activeShipments = dashboardPackages.filter((p) => p.status !== "delivered" && p.status !== "returned").length;
+  const deliveredCount = dashboardPackages.filter((p) => p.status === "delivered").length;
+  const successRate = dashboardPackages.length > 0 ? Math.round((deliveredCount / dashboardPackages.length) * 100) : 0;
 
   const directionSlices = dbBranches.map((b, i) => {
-    const count = dbPackages.filter((p) => p.destinationBranchId === b._id).length;
+    const count = dashboardPackages.filter((p) => p.destinationBranchId === b._id).length;
     const colors = ["var(--brand-color)", "var(--secondary)", "#B7A1A5", "#7C5D5F", "#473636"];
     return { label: b.code, count, color: colors[i % colors.length] };
   }).filter((s) => s.count > 0);
@@ -764,24 +945,14 @@ export default function App() {
     await updateVendor({ vendorId: id, status: next });
   };
 
-  const loggedInDbUser = loggedInUser
-    ? dbUsers.find((u) => u.email.toLowerCase() === loggedInUser.email.toLowerCase())
-    : undefined;
-
   const handleMarkArrived = async (packageId: Id<"packages">) => {
     if (!loggedInDbUser?.branchId) return;
     const bName = dbBranches.find(b => b._id === loggedInDbUser.branchId)?.name || "branch";
     await updateStatus({ packageId, status: "arrived_at_branch", currentBranchId: loggedInDbUser.branchId, details: `Received at ${bName}`, updatedById: loggedInDbUser._id });
   };
 
-  const handleDispatch = async (packageId: Id<"packages">) => {
-    if (!loggedInDbUser?.branchId) return;
-    const driver = window.prompt("Enter Driver Name:");
-    if (driver === null) return;
-    const vehicle = window.prompt("Enter Vehicle Number:");
-    if (vehicle === null) return;
-    const details = `Dispatched with driver ${driver || "N/A"}${vehicle ? ` (Vehicle: ${vehicle})` : ""}`;
-    await updateStatus({ packageId, status: "in_transit", currentBranchId: loggedInDbUser.branchId, details, updatedById: loggedInDbUser._id, driverName: driver, vehicleNumber: vehicle });
+  const handleDispatch = (packageId: Id<"packages">) => {
+    openLogisticsModal("dispatch", packageId);
   };
 
   const handleOutForDelivery = async (packageId: Id<"packages">) => {
@@ -789,64 +960,134 @@ export default function App() {
     await updateStatus({ packageId, status: "out_for_delivery", currentBranchId: loggedInDbUser.branchId, details: "Out for local delivery", updatedById: loggedInDbUser._id });
   };
 
-  const handleDeliver = async (packageId: Id<"packages">) => {
-    if (!loggedInDbUser?.branchId) return;
-    const receivedBy = window.prompt("Enter Receiver Name (Proof of Delivery):");
-    if (receivedBy === null) return;
-    const notes = window.prompt("Enter Delivery Notes (optional):") || "";
-    const details = `Delivered to recipient. Signed by: ${receivedBy}${notes ? ` (Notes: ${notes})` : ""}`;
-    await updateStatus({ packageId, status: "delivered", currentBranchId: loggedInDbUser.branchId, details, updatedById: loggedInDbUser._id, receivedBy, deliveryNotes: notes });
+  const handleDeliver = (packageId: Id<"packages">) => {
+    openLogisticsModal("deliver", packageId);
   };
 
-  const handleAdminUpdateStatus = async (packageId: Id<"packages">) => {
-    if (!loggedInDbUser) return;
-    const p = dbPackages.find(x => x._id === packageId);
-    if (!p) return;
-    const status = window.prompt("Enter new status (booked, in_transit, arrived_at_branch, out_for_delivery, delivered, returned):", p.status);
-    if (!status) return;
-    
-    const validStatuses = ["booked", "in_transit", "arrived_at_branch", "out_for_delivery", "delivered", "returned"];
-    if (!validStatuses.includes(status)) {
-      alert(`Invalid status. Must be one of: ${validStatuses.join(", ")}`);
+  const handleAdminUpdateStatus = (packageId: Id<"packages">) => {
+    openLogisticsModal("statusUpdate", packageId);
+  };
+
+  const handleMarkReturned = (packageId: Id<"packages">) => {
+    openLogisticsModal("return", packageId);
+  };
+
+  const handleForwardToHub = (packageId: Id<"packages">) => {
+    openLogisticsModal("forward", packageId);
+  };
+
+  const submitLogisticsAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!logisticsModal || !loggedInDbUser) return;
+
+    const shipment = dbPackages.find((pkg) => pkg._id === logisticsModal.packageId);
+    if (!shipment) return;
+
+    const selectedBranchId = logisticsBranchId ? (logisticsBranchId as Id<"branches">) : undefined;
+    const currentBranchId = logisticsModal.action === "forward"
+      ? shipment.currentBranchId
+      : selectedBranchId ?? loggedInDbUser.branchId;
+    if (!currentBranchId) {
+      alert("Select a branch before saving.");
       return;
     }
-    
-    const branchCode = window.prompt("Enter current Branch Code:", dbBranches.find(b => b._id === p.currentBranchId)?.code || "");
-    const branch = dbBranches.find(b => b.code.toLowerCase() === branchCode?.toLowerCase());
-    if (!branch) { alert("Invalid branch code"); return; }
-    
-    let driverName, vehicleNumber, receivedBy, deliveryNotes;
-    let details = `Admin manual status update to ${status.replace(/_/g, " ")}`;
-    if (status === "in_transit") {
-      driverName = window.prompt("Driver Name (optional):") || undefined;
-      vehicleNumber = window.prompt("Vehicle Number (optional):") || undefined;
-      if (driverName) {
-        details = `Dispatched by admin with driver ${driverName}${vehicleNumber ? ` (Vehicle: ${vehicleNumber})` : ""}`;
-      }
-    } else if (status === "delivered") {
-      receivedBy = window.prompt("Received By:") || undefined;
-      deliveryNotes = window.prompt("Delivery Notes (optional):") || undefined;
-      if (receivedBy) {
-        details = `Delivered by admin. Signed by: ${receivedBy}${deliveryNotes ? ` (Notes: ${deliveryNotes})` : ""}`;
-      }
-    }
-    
-    await updateStatus({
-      packageId,
-      status: status as any,
-      currentBranchId: branch._id,
-      details,
-      updatedById: loggedInDbUser._id,
-      driverName,
-      vehicleNumber,
-      receivedBy,
-      deliveryNotes
-    });
-  };
 
-  const matchedVendor = loggedInUser
-    ? dbVendors.find((v) => v.email.toLowerCase() === loggedInUser.email.toLowerCase())
-    : undefined;
+    const update = async (payload: LogisticsUpdatePayload) => {
+      await updateStatus(payload);
+      resetLogisticsModal();
+    };
+
+    const currentBranchLabel = branchName(currentBranchId);
+
+    switch (logisticsModal.action) {
+      case "dispatch":
+        await update({
+          packageId: shipment._id,
+          status: "in_transit",
+          currentBranchId,
+          details: logisticsDetails || `Dispatched with driver ${logisticsDriverName || "N/A"}${logisticsVehicleNumber ? ` (Vehicle: ${logisticsVehicleNumber})` : ""}`,
+          updatedById: loggedInDbUser._id,
+          driverName: logisticsDriverName || undefined,
+          vehicleNumber: logisticsVehicleNumber || undefined,
+        });
+        break;
+      case "deliver":
+        if (!logisticsReceivedBy.trim()) {
+          alert("Receiver name is required.");
+          return;
+        }
+        await update({
+          packageId: shipment._id,
+          status: "delivered",
+          currentBranchId,
+          details: logisticsDetails || `Delivered to recipient. Signed by: ${logisticsReceivedBy}${logisticsDeliveryNotes ? ` (Notes: ${logisticsDeliveryNotes})` : ""}`,
+          updatedById: loggedInDbUser._id,
+          receivedBy: logisticsReceivedBy,
+          deliveryNotes: logisticsDeliveryNotes || undefined,
+        });
+        break;
+      case "statusUpdate": {
+        const validTransitions: Record<string, string[]> = {
+          booked: ["in_transit", "returned"],
+          in_transit: ["arrived_at_branch", "returned"],
+          arrived_at_branch: ["out_for_delivery", "in_transit", "returned"],
+          out_for_delivery: ["delivered", "returned"],
+          delivered: ["returned"],
+          returned: [],
+        };
+        const currentPkgStatus = shipment.status;
+        const allowed = validTransitions[currentPkgStatus] || [];
+        if (logisticsStatus !== currentPkgStatus && !allowed.includes(logisticsStatus)) {
+          alert(`Cannot transition from "${currentPkgStatus}" to "${logisticsStatus}".`);
+          return;
+        }
+        if (logisticsStatus === "delivered" && !logisticsReceivedBy.trim()) {
+          alert("Receiver name is required.");
+          return;
+        }
+        await update({
+          packageId: shipment._id,
+          status: logisticsStatus,
+          currentBranchId,
+          details: logisticsDetails || `Admin manual status update to ${logisticsStatus.replace(/_/g, " ")}`,
+          updatedById: loggedInDbUser._id,
+          driverName: logisticsStatus === "in_transit" ? logisticsDriverName || undefined : undefined,
+          vehicleNumber: logisticsStatus === "in_transit" ? logisticsVehicleNumber || undefined : undefined,
+          receivedBy: logisticsStatus === "delivered" ? logisticsReceivedBy || undefined : undefined,
+          deliveryNotes: logisticsStatus === "delivered" ? logisticsDeliveryNotes || undefined : undefined,
+        });
+        break;
+      }
+      case "return":
+        await update({
+          packageId: shipment._id,
+          status: "returned",
+          currentBranchId,
+          details: logisticsDetails || `Returned to sender from ${currentBranchLabel}`,
+          updatedById: loggedInDbUser._id,
+        });
+        break;
+      case "forward":
+        if (!selectedBranchId) {
+          alert("Select the next hub before forwarding.");
+          return;
+        }
+        if (selectedBranchId === shipment.currentBranchId) {
+          alert("Choose a different hub for the forward action.");
+          return;
+        }
+        await update({
+          packageId: shipment._id,
+          status: "in_transit",
+          currentBranchId: selectedBranchId,
+          details: logisticsDetails || `Transferred from ${branchName(shipment.currentBranchId)} to ${branchName(selectedBranchId)}`,
+          updatedById: loggedInDbUser._id,
+          driverName: logisticsDriverName || undefined,
+          vehicleNumber: logisticsVehicleNumber || undefined,
+        });
+        break;
+    }
+  };
 
   const openTrackPackage = (trackingNumber: string) => {
     setTrackId(trackingNumber);
@@ -855,7 +1096,7 @@ export default function App() {
     setActiveTab("track");
   };
 
-  const weeklyCounts = weeklyPackageCounts(dbPackages);
+  const weeklyCounts = weeklyPackageCounts(dashboardPackages);
   const lineChartPath = chartPathFromCounts(weeklyCounts);
   const barChartMax = Math.max(...weeklyCounts, 1);
 
@@ -988,8 +1229,80 @@ export default function App() {
               onChange={(e) => setHeaderSearch(e.target.value)}
             />
           </div>
-          <div className="topbar-actions">
-            <button type="button" className="topbar-icon-btn" title="Notifications"><Bell size={14} /></button>
+          <div className="topbar-actions" style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="topbar-icon-btn"
+              title="Notifications"
+              onClick={() => setNotificationsOpen((value) => !value)}
+              style={{ position: "relative" }}
+            >
+              <Bell size={14} />
+              {notificationItems.length > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -4,
+                    minWidth: 16,
+                    height: 16,
+                    padding: "0 4px",
+                    borderRadius: 999,
+                    background: "var(--brand-color)",
+                    color: "white",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {notificationItems.length}
+                </span>
+              )}
+            </button>
+            {notificationsOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 10px)",
+                  right: 56,
+                  width: 320,
+                  background: "var(--bg-color)",
+                  border: "1px solid var(--border-color)",
+                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.18)",
+                  borderRadius: 16,
+                  padding: 14,
+                  zIndex: 30,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <h4 className="swiss-title" style={{ fontSize: 13, margin: 0 }}>Notifications</h4>
+                  <button type="button" className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => setNotificationsOpen(false)}>✕</button>
+                </div>
+                {notificationItems.length === 0 ? (
+                  <div style={{ fontSize: 12, color: "var(--badge-text)" }}>No notifications right now.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
+                    {notificationItems.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          border: "1px solid var(--border-color)",
+                          borderLeft: `4px solid ${item.tone === "warning" ? "var(--brand-color)" : item.tone === "success" ? "var(--success-color)" : "var(--secondary)"}`,
+                          borderRadius: 12,
+                          padding: "10px 12px",
+                          background: "var(--bg-color)",
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--title-color)", marginBottom: 2 }}>{item.title}</div>
+                        <div style={{ fontSize: 11, color: "var(--badge-text)" }}>{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="user-chip">
               <div className="user-avatar">{userInitials(loggedInUser.name)}</div>
               <div>
@@ -1012,7 +1325,7 @@ export default function App() {
               <div className="grid-4">
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Total Packages</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.length}</p>
                 </div>
                 <div className="swiss-card" style={{ borderColor: "var(--brand-color)" }}>
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--brand-color)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Active Shipments</h4>
@@ -1031,15 +1344,15 @@ export default function App() {
               <div className="grid-4">
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Total Packages</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.length}</p>
                 </div>
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Incoming</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.filter((p) => p.status === "booked" || p.status === "in_transit").length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "booked" || p.status === "in_transit").length}</p>
                 </div>
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Delivered</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.filter((p) => p.status === "delivered").length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "delivered").length}</p>
                 </div>
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Stock Items</h4>
@@ -1050,11 +1363,11 @@ export default function App() {
               <div className="grid-4">
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Active Shipments</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.filter((p) => p.status !== "delivered" && p.status !== "returned").length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status !== "delivered" && p.status !== "returned").length}</p>
                 </div>
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Delivered</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbPackages.filter((p) => p.status === "delivered").length}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "delivered").length}</p>
                 </div>
                 <div className="swiss-card">
                   <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Partner Vendors</h4>
@@ -1163,7 +1476,7 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dbPackages.slice(0, 5).map((pkg) => (
+                  {dashboardPackages.slice(0, 5).map((pkg) => (
                       <tr key={pkg._id}>
                         <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: "bold" }}>{pkg.trackingNumber}</td>
                         <td>{pkg.senderName}</td>
@@ -1320,7 +1633,7 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dbPackages
+                  {visiblePackages
                     .filter((p) => p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) || p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) || p.receiverName.toLowerCase().includes(searchQuery.toLowerCase()) || p.trackingNumber.toLowerCase().includes(headerSearch.toLowerCase()))
                     .map((p) => (
                       <tr key={p._id}>
@@ -1399,8 +1712,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Track / Pickup / Invoices Tab */}
-        {(activeTab === "track" || activeTab === "pickup" || activeTab === "invoices") && (
+        {/* Track Tab */}
+        {activeTab === "track" && (
           <div style={{ maxWidth: 700, margin: "0 auto", width: "100%" }}>
             <div className="swiss-card" style={{ marginBottom: 24 }}>
               <h3 className="swiss-title" style={{ fontSize: 16, marginBottom: 16, textTransform: "uppercase" }}>Trace Package Route</h3>
@@ -1524,6 +1837,118 @@ export default function App() {
                 Enter a tracking ID to view shipment milestones.
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pickup Requests Tab */}
+        {activeTab === "pickup" && (
+          <div className="swiss-card wireframe-panel">
+            <div className="module-toolbar">
+              <input type="text" placeholder="Search pickup requests..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <span className="swiss-badge active">{vendorPickupPackages.length} pending</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tracking ID</th>
+                    <th>Sender</th>
+                    <th>Destination</th>
+                    <th>Weight</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendorPickupPackages
+                    .filter((p) =>
+                      p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      branchName(p.destinationBranchId).toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((p) => (
+                      <tr key={p._id}>
+                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
+                        <td>{p.senderName}</td>
+                        <td>{branchName(p.destinationBranchId)}</td>
+                        <td className="code-text">{p.weight} kg</td>
+                        <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
+                        <td>
+                          <button
+                            type="button"
+                            className="swiss-btn"
+                            style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }}
+                            onClick={async () => {
+                              if (!loggedInDbUser) return;
+                              await updateStatus({
+                                packageId: p._id,
+                                status: "in_transit",
+                                currentBranchId: p.currentBranchId,
+                                details: "Pickup accepted by carrier",
+                                updatedById: loggedInDbUser._id,
+                                driverName: p.driverName || undefined,
+                                vehicleNumber: p.vehicleNumber || undefined,
+                              });
+                            }}
+                          >
+                            Accept Pickup
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {vendorPickupPackages.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No pickup requests assigned yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Invoices Tab */}
+        {activeTab === "invoices" && (
+          <div className="swiss-card wireframe-panel">
+            <div className="module-toolbar">
+              <input type="text" placeholder="Search invoices..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <span className="swiss-badge active">{vendorInvoicePackages.length} paid / delivered</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tracking ID</th>
+                    <th>Route</th>
+                    <th>Weight</th>
+                    <th>Delivered</th>
+                    <th>POD Recipient</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendorInvoicePackages
+                    .filter((p) =>
+                      p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      branchName(p.destinationBranchId).toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.receiverName.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((p) => (
+                      <tr key={p._id}>
+                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
+                        <td>{branchName(p.originBranchId)} → {branchName(p.destinationBranchId)}</td>
+                        <td className="code-text">{p.weight} kg</td>
+                        <td className="code-text">{new Date(p.updatedAt).toLocaleDateString()}</td>
+                        <td>{p.receivedBy || "—"}</td>
+                      </tr>
+                    ))}
+                  {vendorInvoicePackages.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No delivered shipments yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -1775,8 +2200,10 @@ export default function App() {
                       const userBranchId = loggedInDbUser?.branchId;
                       if (!userBranchId) return false;
                       if (activeTab === "incoming") {
-                        return p.destinationBranchId === userBranchId &&
-                          (p.status === "booked" || p.status === "in_transit");
+                        return (
+                          (p.destinationBranchId === userBranchId && p.status === "in_transit") ||
+                          (p.currentBranchId === userBranchId && p.status === "arrived_at_branch" && p.currentBranchId !== p.destinationBranchId)
+                        );
                       }
                       return p.currentBranchId === userBranchId &&
                         (p.status === "booked" || p.status === "in_transit" || p.status === "arrived_at_branch" || p.status === "out_for_delivery");
@@ -1789,14 +2216,20 @@ export default function App() {
                         <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
                         <td className="code-text">{p.weight} kg</td>
                         <td style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                          {activeTab === "incoming" && p.status !== "arrived_at_branch" && p.status !== "delivered" && (
+                          {activeTab === "incoming" && p.status === "in_transit" && (
                             <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkArrived(p._id)}>Mark Arrived</button>
+                          )}
+                          {activeTab === "incoming" && p.status === "arrived_at_branch" && p.currentBranchId !== p.destinationBranchId && (
+                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleForwardToHub(p._id)}>Forward to Hub</button>
                           )}
                           {activeTab === "outgoing" && p.status === "booked" && (
                             <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleDispatch(p._id)}>Dispatch</button>
                           )}
                           {activeTab === "outgoing" && (p.status === "in_transit" || p.status === "arrived_at_branch") && (
                             <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleOutForDelivery(p._id)}>Out for Delivery</button>
+                          )}
+                          {activeTab === "outgoing" && (p.status === "arrived_at_branch" || p.status === "out_for_delivery") && (
+                            <button className="secondary-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkReturned(p._id)}>Mark Returned</button>
                           )}
                           {activeTab === "outgoing" && p.status === "out_for_delivery" && (
                             <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto", background: "var(--success-color)", borderColor: "var(--success-color)" }} onClick={() => handleDeliver(p._id)}>Deliver</button>
@@ -1841,13 +2274,13 @@ export default function App() {
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
               <input type="text" placeholder="Search products..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button className="swiss-btn" onClick={() => setModalOpen("inventory")}>+ Add Product</button>
+              <button className="swiss-btn" onClick={() => { resetProductForm(); setModalOpen("inventory"); }}>+ Add Product</button>
             </div>
 
             {/* Low stock alert */}
-            {dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length > 0 && (
+            {notifyLowStock && lowStockItems.length > 0 && (
               <div style={{ background: "var(--brand-glow-hover)", border: "1px solid var(--brand-color)", padding: "10px 16px", marginBottom: 16, fontSize: 12, color: "var(--brand-color)", fontWeight: 700 }}>
-                ⚠ {dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length} item(s) are below low-stock threshold
+                ⚠ {lowStockItems.length} item(s) are below low-stock threshold
               </div>
             )}
 
@@ -1890,7 +2323,7 @@ export default function App() {
                                 type: "adjustment",
                                 quantityChanged: -1,
                                 notes: "Quick inline adjustment",
-                                updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any
+                                updatedById: loggedInDbUser!._id
                               })}
                             >−</button>
                             <button
@@ -1902,7 +2335,7 @@ export default function App() {
                                 type: "adjustment",
                                 quantityChanged: 1,
                                 notes: "Quick inline adjustment",
-                                updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any
+                                updatedById: loggedInDbUser!._id
                               })}
                             >+</button>
                             <button
@@ -1921,6 +2354,31 @@ export default function App() {
                                 setModalOpen("history");
                               }}
                             >History</button>
+                            <button
+                              className="icon-btn"
+                              title="Edit product"
+                              onClick={() => openEditProduct(item)}
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              className="icon-btn icon-btn-danger"
+                              title="Delete product"
+                              onClick={async () => {
+                                if (confirm(`Delete product ${item.productName}?`)) {
+                                  try {
+                                    await removeProduct({ productId: item._id });
+                                    if (txProductId === item._id) {
+                                      setTxProductId(null);
+                                    }
+                                  } catch (error) {
+                                    alert(error instanceof Error ? error.message : "Could not delete this product.");
+                                  }
+                                }
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -2249,10 +2707,10 @@ export default function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>Add New Product</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => setModalOpen(null)}>✕</button>
+              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingProductId ? "Edit Product" : "Add New Product"}</h2>
+              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetProductForm(); setModalOpen(null); }}>✕</button>
             </div>
-            <form onSubmit={handleAddProduct} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <form onSubmit={handleSaveProduct} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="grid-2">
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Product Name</label>
@@ -2284,8 +2742,15 @@ export default function App() {
               </div>
               <div className="grid-3">
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Initial Quantity</label>
-                  <input type="number" required className="swiss-input" value={newProductQty} onChange={(e) => setNewProductQty(e.target.value)} />
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>{editingProductId ? "Current Quantity" : "Initial Quantity"}</label>
+                  <input
+                    type="number"
+                    required={!editingProductId}
+                    className="swiss-input"
+                    value={newProductQty}
+                    onChange={(e) => setNewProductQty(e.target.value)}
+                    disabled={!!editingProductId}
+                  />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Low Stock Alert</label>
@@ -2297,8 +2762,8 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">Save Product</button>
+                <button type="button" className="secondary-btn" onClick={() => { resetProductForm(); setModalOpen(null); }}>Cancel</button>
+                <button type="submit" className="swiss-btn">{editingProductId ? "Save Product" : "Create Product"}</button>
               </div>
             </form>
           </div>
@@ -2316,7 +2781,7 @@ export default function App() {
             <form onSubmit={handleTransactionSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Transaction Type</label>
-                <select className="swiss-input" value={txType} onChange={(e) => setTxType(e.target.value as any)}>
+                <select className="swiss-input" value={txType} onChange={(e) => setTxType(e.target.value as "purchase" | "sale" | "adjustment")}>
                   <option value="purchase">Purchase (Add Stock)</option>
                   <option value="sale">Sale / Dispatch (Remove Stock)</option>
                   <option value="adjustment">Manual Adjustment</option>
@@ -2386,6 +2851,157 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {logisticsModal && logisticsShipment && (
+        <div className="modal-overlay" onClick={resetLogisticsModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+            <div className="modal-header">
+              <h2 className="swiss-title" style={{ fontSize: 18 }}>
+                {logisticsModal.action === "dispatch"
+                  ? "Dispatch Shipment"
+                  : logisticsModal.action === "deliver"
+                    ? "Confirm Delivery"
+                    : logisticsModal.action === "statusUpdate"
+                      ? "Update Shipment Status"
+                      : logisticsModal.action === "return"
+                        ? "Mark Returned"
+                        : "Forward to Hub"}
+              </h2>
+              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={resetLogisticsModal}>✕</button>
+            </div>
+            <form onSubmit={submitLogisticsAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Shipment</label>
+                <div className="swiss-badge active" style={{ width: "fit-content" }}>
+                  {logisticsShipment.trackingNumber} · {branchName(logisticsShipment.originBranchId)} → {branchName(logisticsShipment.destinationBranchId)}
+                </div>
+              </div>
+
+              {(logisticsModal.action === "dispatch" || logisticsModal.action === "forward" || (logisticsModal.action === "statusUpdate" && logisticsStatus === "in_transit")) && (
+                <div className="grid-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Driver Name</label>
+                    <input type="text" className="swiss-input" value={logisticsDriverName} onChange={(e) => setLogisticsDriverName(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vehicle Number</label>
+                    <input type="text" className="swiss-input" value={logisticsVehicleNumber} onChange={(e) => setLogisticsVehicleNumber(e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              {logisticsModal.action === "statusUpdate" && (
+                <>
+                  <div className="grid-2">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Status</label>
+                      <select className="swiss-input" value={logisticsStatus} onChange={(e) => setLogisticsStatus(e.target.value as ShipmentStatus)}>
+                        <option value="booked">Booked</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="arrived_at_branch">At Branch</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="returned">Returned</option>
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Current Branch</label>
+                      <select className="swiss-input" value={logisticsBranchId} onChange={(e) => setLogisticsBranchId(e.target.value)}>
+                        <option value="">Select branch</option>
+                        {dbBranches.map((branch) => (
+                          <option key={branch._id} value={branch._id}>{branch.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {logisticsStatus === "delivered" && (
+                    <div className="grid-2">
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Received By</label>
+                        <input type="text" className="swiss-input" value={logisticsReceivedBy} onChange={(e) => setLogisticsReceivedBy(e.target.value)} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Delivery Notes</label>
+                        <input type="text" className="swiss-input" value={logisticsDeliveryNotes} onChange={(e) => setLogisticsDeliveryNotes(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {logisticsModal.action === "deliver" && (
+                <div className="grid-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Received By</label>
+                    <input type="text" required className="swiss-input" value={logisticsReceivedBy} onChange={(e) => setLogisticsReceivedBy(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Delivery Notes</label>
+                    <input type="text" className="swiss-input" value={logisticsDeliveryNotes} onChange={(e) => setLogisticsDeliveryNotes(e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              {logisticsModal.action === "forward" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Forward To Hub</label>
+                  <select className="swiss-input" value={logisticsBranchId} onChange={(e) => setLogisticsBranchId(e.target.value)}>
+                    <option value="">Select branch</option>
+                    {dbBranches.map((branch) => (
+                      <option key={branch._id} value={branch._id}>{branch.name} ({branch.code})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>
+                  {logisticsModal.action === "return"
+                    ? "Return Reason"
+                    : logisticsModal.action === "deliver"
+                      ? "Delivery Details"
+                      : logisticsModal.action === "forward"
+                        ? "Transfer Details"
+                        : logisticsModal.action === "dispatch"
+                          ? "Dispatch Details"
+                          : "Status Details"}
+                </label>
+                <textarea
+                  rows={3}
+                  className="swiss-input"
+                  style={{ resize: "none" }}
+                  value={logisticsDetails}
+                  onChange={(e) => setLogisticsDetails(e.target.value)}
+                  placeholder={logisticsModal.action === "dispatch"
+                    ? "Driver and loading notes"
+                    : logisticsModal.action === "deliver"
+                      ? "Delivery remarks"
+                      : logisticsModal.action === "forward"
+                        ? "Transfer notes"
+                        : logisticsModal.action === "return"
+                          ? "Reason for return"
+                          : "Add update details"}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
+                <button type="button" className="secondary-btn" onClick={resetLogisticsModal}>Cancel</button>
+                <button type="submit" className="swiss-btn">
+                  {logisticsModal.action === "dispatch"
+                    ? "Dispatch"
+                    : logisticsModal.action === "deliver"
+                      ? "Mark Delivered"
+                      : logisticsModal.action === "statusUpdate"
+                        ? "Save Status"
+                        : logisticsModal.action === "return"
+                          ? "Mark Returned"
+                          : "Forward"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
