@@ -78,3 +78,10 @@ export const getMovements = query({
       .collect();
   },
 });
+
+// Get all stock movements (for reporting ledger)
+export const getAllMovements = query({
+  handler: async (ctx) => {
+    return await ctx.db.query("stockMovements").collect();
+  },
+});

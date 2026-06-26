@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, Pencil, Trash2 } from "lucide-react";
+import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, Pencil, Trash2, X } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
 import "./App.css";
@@ -142,6 +142,7 @@ export default function App() {
 
   // Settings & reports
   const [settingsTab, setSettingsTab] = useState<"general" | "security" | "notifications">("general");
+  const [reportTab, setReportTab] = useState<"shipments" | "inventory" | "analytics">("shipments");
   const [reportDateFrom, setReportDateFrom] = useState<string>("");
   const [reportDateTo, setReportDateTo] = useState<string>("");
   const [reportBranch, setReportBranch] = useState<string>("All");
@@ -171,6 +172,7 @@ export default function App() {
   const dbVendors = useQuery(api.vendors.list) ?? [];
   const dbInventory = useQuery(api.inventory.list) ?? [];
   const dbMovements = useQuery(api.inventory.getMovements, txProductId ? { productId: txProductId } : "skip") ?? [];
+  const dbAllMovements = useQuery(api.inventory.getAllMovements) ?? [];
 
   // Convex mutations
   const createUser = useMutation(api.users.create);
@@ -575,7 +577,7 @@ export default function App() {
       lowStockAlert: parseInt(newProductAlert) || 10,
       vendorId: vendor._id,
       price: parseFloat(newProductPrice) || 0,
-      updatedById: loggedInUser?._id!,
+      updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any,
     });
     setNewProductName("");
     setNewProductSku("");
@@ -605,12 +607,53 @@ export default function App() {
       type: txType,
       quantityChanged: appliedChange,
       notes: txNotes,
-      updatedById: loggedInUser._id,
+      updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any,
     });
     
     setModalOpen(null);
     setTxQuantity("");
     setTxNotes("");
+  };
+
+  const exportToCSV = () => {
+    let csvData = "";
+    if (reportTab === "shipments") {
+      const headers = ["Tracking ID", "Sender", "Receiver", "Destination", "Status", "Date"];
+      const rows = filteredReportPackages.map(p => [
+        p.trackingNumber,
+        `"${p.senderName}"`,
+        `"${p.receiverName}"`,
+        `"${branchName(p.destinationBranchId)}"`,
+        p.status,
+        new Date(p.createdAt).toLocaleDateString()
+      ]);
+      csvData = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    } else if (reportTab === "inventory") {
+      const headers = ["Date", "Type", "Change", "Notes", "Product", "User"];
+      const rows = dbAllMovements.slice().reverse().map(log => {
+        const product = dbInventory.find(p => p._id === log.productId);
+        const user = dbUsers.find(u => u._id === log.updatedById);
+        return [
+          new Date(log.timestamp).toLocaleString(),
+          log.type,
+          log.quantityChanged,
+          `"${log.notes || ""}"`,
+          `"${product?.productName || "Unknown"}"`,
+          `"${user?.name || "Unknown"}"`
+        ];
+      });
+      csvData = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    }
+    
+    if (!csvData) return;
+    const blob = new Blob([csvData], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `logikeep_report_${reportTab}_${new Date().getTime()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // Track package
@@ -1486,66 +1529,146 @@ export default function App() {
 
         {/* Reports Tab */}
         {activeTab === "reports" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="report-filters">
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date From</label>
-                <input type="date" className="swiss-input" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date To</label>
-                <input type="date" className="swiss-input" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Branch</label>
-                <select className="swiss-input" value={reportBranch} onChange={(e) => setReportBranch(e.target.value)}>
-                  <option value="All">All Branches</option>
-                  {dbBranches.map((b) => (
-                    <option key={b._id} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Partner</label>
-                <select className="swiss-input" value={reportPartner} onChange={(e) => setReportPartner(e.target.value)}>
-                  <option value="All">All Partners</option>
-                  {dbVendors.map((v) => (
-                    <option key={v._id} value={v.name}>{v.name}</option>
-                  ))}
-                </select>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", gap: 16, borderBottom: "1px solid var(--border-color)", paddingBottom: 16 }}>
+              <button 
+                className={reportTab === "shipments" ? "swiss-btn" : "secondary-btn"} 
+                onClick={() => setReportTab("shipments")}
+              >Shipments Ledger</button>
+              <button 
+                className={reportTab === "inventory" ? "swiss-btn" : "secondary-btn"} 
+                onClick={() => setReportTab("inventory")}
+              >Stock Movements</button>
+              <button 
+                className={reportTab === "analytics" ? "swiss-btn" : "secondary-btn"} 
+                onClick={() => setReportTab("analytics")}
+              >Analytics Summary</button>
+              <div style={{ marginLeft: "auto" }}>
+                <button className="swiss-btn" style={{ background: "var(--brand-color)" }} onClick={exportToCSV}>Export CSV</button>
               </div>
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th>
-                    <th>Sender</th>
-                    <th>Receiver</th>
-                    <th>Destination</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredReportPackages.map((p) => (
-                    <tr key={p._id}>
-                      <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: 700 }}>{p.trackingNumber}</td>
-                      <td>{p.senderName}</td>
-                      <td>{p.receiverName}</td>
-                      <td>{branchName(p.destinationBranchId)}</td>
-                      <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
-                      <td className="code-text">{new Date(p.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                  {filteredReportPackages.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No shipments match the selected filters</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+
+            {reportTab === "shipments" && (
+              <div className="swiss-card wireframe-panel">
+                <div className="report-filters">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date From</label>
+                    <input type="date" className="swiss-input" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date To</label>
+                    <input type="date" className="swiss-input" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Branch</label>
+                    <select className="swiss-input" value={reportBranch} onChange={(e) => setReportBranch(e.target.value)}>
+                      <option value="All">All Branches</option>
+                      {dbBranches.map((b) => (
+                        <option key={b._id} value={b.name}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Partner</label>
+                    <select className="swiss-input" value={reportPartner} onChange={(e) => setReportPartner(e.target.value)}>
+                      <option value="All">All Partners</option>
+                      {dbVendors.map((v) => (
+                        <option key={v._id} value={v.name}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Tracking ID</th>
+                        <th>Sender</th>
+                        <th>Receiver</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredReportPackages.map((p) => (
+                        <tr key={p._id}>
+                          <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: 700 }}>{p.trackingNumber}</td>
+                          <td>{p.senderName}</td>
+                          <td>{p.receiverName}</td>
+                          <td>{branchName(p.destinationBranchId)}</td>
+                          <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
+                          <td className="code-text">{new Date(p.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                      {filteredReportPackages.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No shipments match the selected filters</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {reportTab === "inventory" && (
+              <div className="swiss-card wireframe-panel">
+                <div style={{ overflowX: "auto" }}>
+                  <table className="swiss-table" style={{ width: "100%", textAlign: "left", fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Change</th>
+                        <th>Notes</th>
+                        <th>Product</th>
+                        <th>User</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dbAllMovements.slice().reverse().map((log) => {
+                        const product = dbInventory.find(p => p._id === log.productId);
+                        const user = dbUsers.find(u => u._id === log.updatedById);
+                        return (
+                          <tr key={log._id}>
+                            <td className="code-text" style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(log.timestamp).toLocaleString("en-US", { timeZone: timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                            <td><span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>{log.type}</span></td>
+                            <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>{log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}</td>
+                            <td>{log.notes || "-"}</td>
+                            <td>{product?.productName || "Unknown"}</td>
+                            <td>{user?.name || "Unknown"}</td>
+                          </tr>
+                        );
+                      })}
+                      {dbAllMovements.length === 0 && (
+                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--badge-text)" }}>No stock movements recorded</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {reportTab === "analytics" && (
+              <div className="grid-3" style={{ marginTop: 16 }}>
+                <div className="swiss-card stat-card" style={{ padding: 24 }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Total Shipments</h4>
+                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbPackages.length}</div>
+                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>All time volume</div>
+                </div>
+                <div className="swiss-card stat-card" style={{ padding: 24 }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Total Products</h4>
+                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbInventory.length}</div>
+                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>In inventory</div>
+                </div>
+                <div className="swiss-card stat-card" style={{ padding: 24 }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Active Partners</h4>
+                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbVendors.length}</div>
+                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>Couriers & Suppliers</div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1767,7 +1890,7 @@ export default function App() {
                                 type: "adjustment",
                                 quantityChanged: -1,
                                 notes: "Quick inline adjustment",
-                                updatedById: loggedInUser?._id!
+                                updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any
                               })}
                             >−</button>
                             <button
@@ -1779,7 +1902,7 @@ export default function App() {
                                 type: "adjustment",
                                 quantityChanged: 1,
                                 notes: "Quick inline adjustment",
-                                updatedById: loggedInUser?._id!
+                                updatedById: dbUsers.find(u => u.email === loggedInUser?.email)?._id as any
                               })}
                             >+</button>
                             <button
@@ -2255,7 +2378,7 @@ export default function App() {
                             {log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}
                           </td>
                           <td>{log.notes || "-"}</td>
-                          <td>{user?.fullName || "Unknown"}</td>
+                          <td>{user?.name || "Unknown"}</td>
                         </tr>
                       );
                     })
