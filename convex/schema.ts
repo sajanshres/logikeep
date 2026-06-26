@@ -100,4 +100,14 @@ export default defineSchema({
     timestamp: v.number(),
     updatedById: v.id("users"), // User who recorded this update
   }).index("by_package", ["packageId"]),
+
+  // logs of inventory updates (purchases, sales, audits)
+  stockMovements: defineTable({
+    productId: v.id("inventory"),
+    type: v.union(v.literal("purchase"), v.literal("sale"), v.literal("adjustment")),
+    quantityChanged: v.number(), // positive for purchase, negative for sale/use
+    notes: v.optional(v.string()),
+    updatedById: v.id("users"),
+    timestamp: v.number(),
+  }).index("by_product", ["productId"]),
 });
