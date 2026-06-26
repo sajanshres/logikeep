@@ -691,7 +691,8 @@ export default function App() {
 
   const handleMarkArrived = async (packageId: Id<"packages">) => {
     if (!loggedInDbUser?.branchId) return;
-    await updateStatus({ packageId, status: "arrived_at_branch", currentBranchId: loggedInDbUser.branchId, details: "Received at branch", updatedById: loggedInDbUser._id });
+    const bName = dbBranches.find(b => b._id === loggedInDbUser.branchId)?.name || "branch";
+    await updateStatus({ packageId, status: "arrived_at_branch", currentBranchId: loggedInDbUser.branchId, details: `Received at ${bName}`, updatedById: loggedInDbUser._id });
   };
 
   const handleDispatch = async (packageId: Id<"packages">) => {
@@ -700,7 +701,8 @@ export default function App() {
     if (driver === null) return;
     const vehicle = window.prompt("Enter Vehicle Number:");
     if (vehicle === null) return;
-    await updateStatus({ packageId, status: "in_transit", currentBranchId: loggedInDbUser.branchId, details: "Dispatched from branch", updatedById: loggedInDbUser._id, driverName: driver, vehicleNumber: vehicle });
+    const details = `Dispatched with driver ${driver || "N/A"}${vehicle ? ` (Vehicle: ${vehicle})` : ""}`;
+    await updateStatus({ packageId, status: "in_transit", currentBranchId: loggedInDbUser.branchId, details, updatedById: loggedInDbUser._id, driverName: driver, vehicleNumber: vehicle });
   };
 
   const handleOutForDelivery = async (packageId: Id<"packages">) => {
@@ -713,7 +715,8 @@ export default function App() {
     const receivedBy = window.prompt("Enter Receiver Name (Proof of Delivery):");
     if (receivedBy === null) return;
     const notes = window.prompt("Enter Delivery Notes (optional):") || "";
-    await updateStatus({ packageId, status: "delivered", currentBranchId: loggedInDbUser.branchId, details: "Package delivered", updatedById: loggedInDbUser._id, receivedBy, deliveryNotes: notes });
+    const details = `Delivered to recipient. Signed by: ${receivedBy}${notes ? ` (Notes: ${notes})` : ""}`;
+    await updateStatus({ packageId, status: "delivered", currentBranchId: loggedInDbUser.branchId, details, updatedById: loggedInDbUser._id, receivedBy, deliveryNotes: notes });
   };
 
   const handleAdminUpdateStatus = async (packageId: Id<"packages">) => {
@@ -722,24 +725,38 @@ export default function App() {
     if (!p) return;
     const status = window.prompt("Enter new status (booked, in_transit, arrived_at_branch, out_for_delivery, delivered, returned):", p.status);
     if (!status) return;
+    
+    const validStatuses = ["booked", "in_transit", "arrived_at_branch", "out_for_delivery", "delivered", "returned"];
+    if (!validStatuses.includes(status)) {
+      alert(`Invalid status. Must be one of: ${validStatuses.join(", ")}`);
+      return;
+    }
+    
     const branchCode = window.prompt("Enter current Branch Code:", dbBranches.find(b => b._id === p.currentBranchId)?.code || "");
     const branch = dbBranches.find(b => b.code.toLowerCase() === branchCode?.toLowerCase());
     if (!branch) { alert("Invalid branch code"); return; }
     
     let driverName, vehicleNumber, receivedBy, deliveryNotes;
+    let details = `Admin manual status update to ${status.replace(/_/g, " ")}`;
     if (status === "in_transit") {
       driverName = window.prompt("Driver Name (optional):") || undefined;
       vehicleNumber = window.prompt("Vehicle Number (optional):") || undefined;
+      if (driverName) {
+        details = `Dispatched by admin with driver ${driverName}${vehicleNumber ? ` (Vehicle: ${vehicleNumber})` : ""}`;
+      }
     } else if (status === "delivered") {
       receivedBy = window.prompt("Received By:") || undefined;
       deliveryNotes = window.prompt("Delivery Notes (optional):") || undefined;
+      if (receivedBy) {
+        details = `Delivered by admin. Signed by: ${receivedBy}${deliveryNotes ? ` (Notes: ${deliveryNotes})` : ""}`;
+      }
     }
     
     await updateStatus({
       packageId,
       status: status as any,
       currentBranchId: branch._id,
-      details: "Admin manual status update",
+      details,
       updatedById: loggedInDbUser._id,
       driverName,
       vehicleNumber,
@@ -1353,6 +1370,33 @@ export default function App() {
                       <span style={{ color: "var(--title-color)" }}>{trackedPackage.description}</span>
                     </div>
                   )}
+                  {trackedPackage.assignedVendorId && (
+                    <div>
+                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Assigned Carrier</span>
+                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
+                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Partner Carrier"}
+                      </span>
+                    </div>
+                  )}
+                  {trackedPackage.driverName && (
+                    <div>
+                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Driver Info</span>
+                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
+                        {trackedPackage.driverName} {trackedPackage.vehicleNumber ? `(${trackedPackage.vehicleNumber})` : ""}
+                      </span>
+                    </div>
+                  )}
+                  {trackedPackage.receivedBy && (
+                    <div style={{ flexBasis: "100%", borderTop: "1px dashed var(--border-color)", paddingTop: 12, marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: "var(--success-color)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Proof of Delivery</span>
+                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
+                        Received by: {trackedPackage.receivedBy}
+                      </span>
+                      {trackedPackage.deliveryNotes && (
+                        <p style={{ fontSize: 11, color: "var(--badge-text)", marginTop: 2 }}>Notes: {trackedPackage.deliveryNotes}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress bar */}
@@ -1573,10 +1617,10 @@ export default function App() {
                       if (!userBranchId) return false;
                       if (activeTab === "incoming") {
                         return p.destinationBranchId === userBranchId &&
-                          (p.status === "booked" || p.status === "in_transit" || p.status === "arrived_at_branch");
+                          (p.status === "booked" || p.status === "in_transit");
                       }
-                      return p.originBranchId === userBranchId &&
-                        (p.status === "booked" || p.status === "in_transit" || p.status === "out_for_delivery");
+                      return p.currentBranchId === userBranchId &&
+                        (p.status === "booked" || p.status === "in_transit" || p.status === "arrived_at_branch" || p.status === "out_for_delivery");
                     })
                     .map((p) => (
                       <tr key={p._id}>
