@@ -109,6 +109,9 @@ export default function App() {
   const [packageDimH, setPackageDimH] = useState<string>("");
   const [packageDescription, setPackageDescription] = useState<string>("");
   const [assignBranchIdx, setAssignBranchIdx] = useState<number>(0);
+  const [packageDriverName, setPackageDriverName] = useState<string>("");
+  const [packageVehicleNumber, setPackageVehicleNumber] = useState<string>("");
+  const [packageVendorId, setPackageVendorId] = useState<Id<"vendors"> | null>(null);
 
   // Vendor modal fields
   const [newVendorName, setNewVendorName] = useState<string>("");
@@ -296,6 +299,9 @@ export default function App() {
     setPackageDimW("");
     setPackageDimH("");
     setPackageDescription("");
+    setPackageDriverName("");
+    setPackageVehicleNumber("");
+    setPackageVendorId(null);
     setPackageModalTab(1);
   };
 
@@ -356,6 +362,9 @@ export default function App() {
     setPackageDimW(w);
     setPackageDimH(h);
     setPackageDescription(p.description || "");
+    setPackageDriverName(p.driverName || "");
+    setPackageVehicleNumber(p.vehicleNumber || "");
+    setPackageVendorId(p.assignedVendorId || null);
     setPackageModalTab(1);
     setModalOpen("package");
   };
@@ -484,6 +493,9 @@ export default function App() {
         weight: parseFloat(packageWeight) || 0,
         dimensions,
         description: packageDescription || undefined,
+        driverName: packageDriverName || undefined,
+        vehicleNumber: packageVehicleNumber || undefined,
+        assignedVendorId: packageVendorId || undefined,
       });
     } else {
       if (dbBranches.length < 1) return;
@@ -500,6 +512,9 @@ export default function App() {
         weight: parseFloat(packageWeight) || 0,
         dimensions,
         description: packageDescription || undefined,
+        driverName: packageDriverName || undefined,
+        vehicleNumber: packageVehicleNumber || undefined,
+        assignedVendorId: packageVendorId || undefined,
         originBranchId: originBranch._id,
         destinationBranchId: destBranch._id,
         currentBranchId: originBranch._id,
@@ -1840,6 +1855,25 @@ export default function App() {
                       <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Height (cm)</label>
                       <input type="number" step="0.1" required className="swiss-input" placeholder="H" value={packageDimH} onChange={(e) => setPackageDimH(e.target.value)} />
                     </div>
+                  </div>
+                  <div className="grid-2">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Driver Name</label>
+                      <input type="text" className="swiss-input" value={packageDriverName} onChange={(e) => setPackageDriverName(e.target.value)} />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vehicle Number</label>
+                      <input type="text" className="swiss-input" value={packageVehicleNumber} onChange={(e) => setPackageVehicleNumber(e.target.value)} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Assigned Carrier (Vendor)</label>
+                    <select className="swiss-input" value={packageVendorId || ""} onChange={(e) => setPackageVendorId(e.target.value ? e.target.value as Id<"vendors"> : null)}>
+                      <option value="">-- No Carrier Assigned --</option>
+                      {dbVendors.map((v) => (
+                        <option key={v._id} value={v._id}>{v.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Depot</label>
