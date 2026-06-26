@@ -35,6 +35,9 @@ export const create = mutation({
     originBranchId: v.id("branches"),
     destinationBranchId: v.id("branches"),
     currentBranchId: v.id("branches"),
+    assignedVendorId: v.optional(v.id("vendors")),
+    driverName: v.optional(v.string()),
+    vehicleNumber: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const origin = await ctx.db.get(args.originBranchId);
@@ -86,6 +89,9 @@ export const update = mutation({
     weight: v.optional(v.number()),
     dimensions: v.optional(v.string()),
     description: v.optional(v.string()),
+    assignedVendorId: v.optional(v.id("vendors")),
+    driverName: v.optional(v.string()),
+    vehicleNumber: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { packageId, ...fields } = args;
@@ -112,22 +118,29 @@ export const updateStatus = mutation({
     currentBranchId: v.id("branches"),
     details: v.string(),
     updatedById: v.id("users"),
+    driverName: v.optional(v.string()),
+    vehicleNumber: v.optional(v.string()),
+    receivedBy: v.optional(v.string()),
+    deliveryNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.packageId, {
-      status: args.status,
-      currentBranchId: args.currentBranchId,
+    const { packageId, status, currentBranchId, details, updatedById, ...optionalFields } = args;
+    
+    await ctx.db.patch(packageId, {
+      status,
+      currentBranchId,
       updatedAt: Date.now(),
+      ...optionalFields,
     });
 
     // Insert tracking update log
     return await ctx.db.insert("movementLogs", {
-      packageId: args.packageId,
-      status: args.status,
-      locationBranchId: args.currentBranchId,
-      details: args.details,
+      packageId,
+      status,
+      locationBranchId: currentBranchId,
+      details,
       timestamp: Date.now(),
-      updatedById: args.updatedById,
+      updatedById,
     });
   },
 });

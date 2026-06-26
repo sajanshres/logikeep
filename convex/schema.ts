@@ -55,6 +55,10 @@ export default defineSchema({
     destinationBranchId: v.id("branches"),
     currentBranchId: v.id("branches"),
     assignedVendorId: v.optional(v.id("vendors")), // vendor handling this package
+    driverName: v.optional(v.string()),
+    vehicleNumber: v.optional(v.string()),
+    receivedBy: v.optional(v.string()),
+    deliveryNotes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
