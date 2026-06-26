@@ -590,6 +590,7 @@ export default function App() {
   };
 
   const trackedPackage = trackedPkgIdx >= 0 ? dbPackages[trackedPkgIdx] : null;
+  const trackedMovementLogs = useQuery(api.movementLogs.getByPackage, trackedPackage ? { packageId: trackedPackage._id } : "skip") ?? [];
 
   // Helper to get branch name by ID
   const branchName = (id: string | undefined) => {
@@ -713,6 +714,38 @@ export default function App() {
     if (receivedBy === null) return;
     const notes = window.prompt("Enter Delivery Notes (optional):") || "";
     await updateStatus({ packageId, status: "delivered", currentBranchId: loggedInDbUser.branchId, details: "Package delivered", updatedById: loggedInDbUser._id, receivedBy, deliveryNotes: notes });
+  };
+
+  const handleAdminUpdateStatus = async (packageId: Id<"packages">) => {
+    if (!loggedInDbUser) return;
+    const p = dbPackages.find(x => x._id === packageId);
+    if (!p) return;
+    const status = window.prompt("Enter new status (booked, in_transit, arrived_at_branch, out_for_delivery, delivered, returned):", p.status);
+    if (!status) return;
+    const branchCode = window.prompt("Enter current Branch Code:", dbBranches.find(b => b._id === p.currentBranchId)?.code || "");
+    const branch = dbBranches.find(b => b.code.toLowerCase() === branchCode?.toLowerCase());
+    if (!branch) { alert("Invalid branch code"); return; }
+    
+    let driverName, vehicleNumber, receivedBy, deliveryNotes;
+    if (status === "in_transit") {
+      driverName = window.prompt("Driver Name (optional):") || undefined;
+      vehicleNumber = window.prompt("Vehicle Number (optional):") || undefined;
+    } else if (status === "delivered") {
+      receivedBy = window.prompt("Received By:") || undefined;
+      deliveryNotes = window.prompt("Delivery Notes (optional):") || undefined;
+    }
+    
+    await updateStatus({
+      packageId,
+      status: status as any,
+      currentBranchId: branch._id,
+      details: "Admin manual status update",
+      updatedById: loggedInDbUser._id,
+      driverName,
+      vehicleNumber,
+      receivedBy,
+      deliveryNotes
+    });
   };
 
   const matchedVendor = loggedInUser
@@ -1201,10 +1234,13 @@ export default function App() {
                         <td><span className={`swiss-badge ${p.status === "delivered" ? "active" : ""}`}>{statusLabel(p.status)}</span></td>
                         <td className="code-text">{new Date(p.createdAt).toLocaleDateString()}</td>
                         <td>
-                          <div className="table-actions">
+                          <div className="table-actions" style={{ alignItems: "center", gap: 8 }}>
                             <button type="button" className="icon-btn" title="Track package" onClick={() => openTrackPackage(p.trackingNumber)}><Search size={12} /></button>
                             {role === "Admin" && (
-                              <button type="button" className="icon-btn" title="Edit package" onClick={() => openEditPackage(p)}><Pencil size={12} /></button>
+                              <>
+                                <button type="button" className="icon-btn" title="Edit package" onClick={() => openEditPackage(p)}><Pencil size={12} /></button>
+                                <button type="button" className="swiss-btn" style={{ padding: "2px 8px", fontSize: "10px", minWidth: "auto" }} title="Update Status" onClick={() => handleAdminUpdateStatus(p._id)}>Update</button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -1343,38 +1379,21 @@ export default function App() {
 
                 <h4 className="swiss-title" style={{ fontSize: 12, marginBottom: 16, textTransform: "uppercase" }}>Transit Milestones</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0, paddingLeft: 12 }}>
-                  <div style={{ display: "flex", gap: 16, borderLeft: "1px solid var(--border-color)", paddingLeft: 20, paddingBottom: 24, position: "relative" }}>
-                    <div style={{ position: "absolute", left: -5, top: 4, width: 9, height: 9, background: "var(--brand-color)" }} />
-                    <div>
-                      <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(trackedPackage.createdAt).toLocaleDateString()} - 10:00 AM</span>
-                      <p style={{ fontWeight: 700, color: "var(--title-color)" }}>Package Booked at Origin Branch</p>
-                      <p style={{ fontSize: 12, color: "var(--badge-text)" }}>Sender: {trackedPackage.senderName}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 16, borderLeft: "1px solid var(--border-color)", paddingLeft: 20, paddingBottom: 24, position: "relative" }}>
-                    <div style={{ position: "absolute", left: -5, top: 4, width: 9, height: 9, background: trackedPackage.status !== "booked" ? "var(--brand-color)" : "var(--bg-color)", border: "1px solid var(--border-color)" }} />
-                    <div>
-                      <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(trackedPackage.createdAt).toLocaleDateString()} - 02:30 PM</span>
-                      <p style={{ fontWeight: 700, color: "var(--title-color)" }}>Dispatched from Origin Hub</p>
-                      <p style={{ fontSize: 12, color: "var(--badge-text)" }}>Route {branchCode(trackedPackage.originBranchId)} &rarr; {branchCode(trackedPackage.destinationBranchId)}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 16, borderLeft: "1px solid var(--border-color)", paddingLeft: 20, paddingBottom: 24, position: "relative" }}>
-                    <div style={{ position: "absolute", left: -5, top: 4, width: 9, height: 9, background: trackedPackage.status === "delivered" ? "var(--brand-color)" : "var(--bg-color)", border: "1px solid var(--border-color)" }} />
-                    <div>
-                      <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(trackedPackage.updatedAt).toLocaleDateString()} - 09:15 AM</span>
-                      <p style={{ fontWeight: 700, color: "var(--title-color)" }}>Arrived at Destination Depot</p>
-                      <p style={{ fontSize: 12, color: "var(--badge-text)" }}>Sorted at {branchName(trackedPackage.destinationBranchId)}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 16, paddingLeft: 20, position: "relative" }}>
-                    <div style={{ position: "absolute", left: -5, top: 4, width: 9, height: 9, background: trackedPackage.status === "delivered" ? "var(--brand-color)" : "var(--bg-color)", border: "1px solid var(--border-color)" }} />
-                    <div>
-                      <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(trackedPackage.updatedAt).toLocaleDateString()} - 11:30 AM</span>
-                      <p style={{ fontWeight: 700, color: "var(--title-color)" }}>Delivered to Recipient</p>
-                      <p style={{ fontSize: 12, color: "var(--badge-text)" }}>Recipient: {trackedPackage.receiverName} ({trackedPackage.receiverAddress})</p>
-                    </div>
-                  </div>
+                  {trackedMovementLogs.length === 0 ? (
+                    <div style={{ padding: "10px", color: "var(--badge-text)", fontSize: 12 }}>No movement logs available yet.</div>
+                  ) : (
+                    trackedMovementLogs.map((log, index) => (
+                      <div key={log._id} style={{ display: "flex", gap: 16, borderLeft: index < trackedMovementLogs.length - 1 ? "1px solid var(--border-color)" : "none", paddingLeft: 20, paddingBottom: 24, position: "relative" }}>
+                        <div style={{ position: "absolute", left: index < trackedMovementLogs.length - 1 ? -5 : -4, top: 4, width: 9, height: 9, background: "var(--brand-color)", borderRadius: "50%" }} />
+                        <div>
+                          <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(log.timestamp).toLocaleString()}</span>
+                          <p style={{ fontWeight: 700, color: "var(--title-color)", textTransform: "capitalize" }}>{log.status.replace(/_/g, " ")}</p>
+                          <p style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 2 }}>Location: {branchName(log.locationBranchId)}</p>
+                          <p style={{ fontSize: 12, color: "var(--title-color)", marginTop: 4 }}>{log.details}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
