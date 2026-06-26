@@ -73,7 +73,7 @@ export default function App() {
   const [roleFilter, setRoleFilter] = useState<string>("All");
 
   // Modal control
-  const [modalOpen, setModalOpen] = useState<"user" | "branch" | "package" | "vendor" | "inventory" | null>(null);
+  const [modalOpen, setModalOpen] = useState<"user" | "branch" | "package" | "vendor" | "inventory" | "transaction" | "history" | null>(null);
   const [packageModalTab, setPackageModalTab] = useState<number>(1);
 
   // User modal fields
@@ -130,6 +130,12 @@ export default function App() {
   const [newProductPrice, setNewProductPrice] = useState<string>("0");
   const [newProductVendorIdx, setNewProductVendorIdx] = useState<number>(0);
 
+  // Transaction / History modal fields
+  const [txProductId, setTxProductId] = useState<Id<"inventory"> | null>(null);
+  const [txType, setTxType] = useState<"purchase" | "sale" | "adjustment">("purchase");
+  const [txQuantity, setTxQuantity] = useState<string>("");
+  const [txNotes, setTxNotes] = useState<string>("");
+
   // Track package state
   const [trackId, setTrackId] = useState<string>("");
   const [trackedPkgIdx, setTrackedPkgIdx] = useState<number>(-1);
@@ -164,6 +170,7 @@ export default function App() {
   const dbPackages = useQuery(api.packages.list) ?? [];
   const dbVendors = useQuery(api.vendors.list) ?? [];
   const dbInventory = useQuery(api.inventory.list) ?? [];
+  const dbMovements = useQuery(api.inventory.getMovements, txProductId ? { productId: txProductId } : "skip") ?? [];
 
   // Convex mutations
   const createUser = useMutation(api.users.create);
@@ -568,6 +575,7 @@ export default function App() {
       lowStockAlert: parseInt(newProductAlert) || 10,
       vendorId: vendor._id,
       price: parseFloat(newProductPrice) || 0,
+      updatedById: loggedInUser?._id!,
     });
     setNewProductName("");
     setNewProductSku("");
@@ -575,6 +583,34 @@ export default function App() {
     setNewProductAlert("10");
     setNewProductPrice("0");
     setModalOpen(null);
+  };
+
+  const handleTransactionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!txProductId || !loggedInUser) return;
+    
+    const qtyVal = parseInt(txQuantity) || 0;
+    if (qtyVal === 0) return;
+    
+    const product = dbInventory.find(p => p._id === txProductId);
+    if (!product) return;
+    
+    let appliedChange = qtyVal;
+    if (txType === "sale") appliedChange = -Math.abs(qtyVal);
+    if (txType === "purchase") appliedChange = Math.abs(qtyVal);
+    
+    await updateStock({
+      productId: txProductId,
+      newQuantity: Math.max(0, product.quantity + appliedChange),
+      type: txType,
+      quantityChanged: appliedChange,
+      notes: txNotes,
+      updatedById: loggedInUser._id,
+    });
+    
+    setModalOpen(null);
+    setTxQuantity("");
+    setTxNotes("");
   };
 
   // Track package
@@ -1725,13 +1761,43 @@ export default function App() {
                             <button
                               className="secondary-btn"
                               style={{ padding: "2px 8px", fontSize: 12, fontWeight: 800 }}
-                              onClick={() => updateStock({ productId: item._id, newQuantity: Math.max(0, item.quantity - 1) })}
+                              onClick={() => updateStock({ 
+                                productId: item._id, 
+                                newQuantity: Math.max(0, item.quantity - 1),
+                                type: "adjustment",
+                                quantityChanged: -1,
+                                notes: "Quick inline adjustment",
+                                updatedById: loggedInUser?._id!
+                              })}
                             >−</button>
                             <button
                               className="secondary-btn"
                               style={{ padding: "2px 8px", fontSize: 12, fontWeight: 800 }}
-                              onClick={() => updateStock({ productId: item._id, newQuantity: item.quantity + 1 })}
+                              onClick={() => updateStock({ 
+                                productId: item._id, 
+                                newQuantity: item.quantity + 1,
+                                type: "adjustment",
+                                quantityChanged: 1,
+                                notes: "Quick inline adjustment",
+                                updatedById: loggedInUser?._id!
+                              })}
                             >+</button>
+                            <button
+                              className="swiss-btn"
+                              style={{ padding: "2px 8px", fontSize: 12, background: "var(--brand-blue)" }}
+                              onClick={() => {
+                                setTxProductId(item._id);
+                                setModalOpen("transaction");
+                              }}
+                            >Log Tx</button>
+                            <button
+                              className="secondary-btn"
+                              style={{ padding: "2px 8px", fontSize: 12 }}
+                              onClick={() => {
+                                setTxProductId(item._id);
+                                setModalOpen("history");
+                              }}
+                            >History</button>
                           </td>
                         </tr>
                       );
@@ -2112,6 +2178,91 @@ export default function App() {
                 <button type="submit" className="swiss-btn">Save Product</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Modal */}
+      {modalOpen === "transaction" && txProductId && (
+        <div className="modal-overlay" onClick={() => setModalOpen(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, color: "var(--title-color)", margin: 0, fontWeight: 700, letterSpacing: "-0.02em" }}>Log Transaction</h3>
+              <button className="icon-btn" onClick={() => setModalOpen(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleTransactionSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Transaction Type</label>
+                <select className="swiss-input" value={txType} onChange={(e) => setTxType(e.target.value as any)}>
+                  <option value="purchase">Purchase (Add Stock)</option>
+                  <option value="sale">Sale / Dispatch (Remove Stock)</option>
+                  <option value="adjustment">Manual Adjustment</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Quantity</label>
+                <input type="number" required className="swiss-input" value={txQuantity} onChange={(e) => setTxQuantity(e.target.value)} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Notes / Reference</label>
+                <input type="text" className="swiss-input" value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="e.g. Supplier Invoice #1234" />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
+                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
+                <button type="submit" className="swiss-btn">Save Log</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {modalOpen === "history" && txProductId && (
+        <div className="modal-overlay" onClick={() => setModalOpen(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, color: "var(--title-color)", margin: 0, fontWeight: 700, letterSpacing: "-0.02em" }}>Stock Movement History</h3>
+              <button className="icon-btn" onClick={() => setModalOpen(null)}><X size={18} /></button>
+            </div>
+            <div className="table-container">
+              <table className="swiss-table" style={{ width: "100%", textAlign: "left", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Change</th>
+                    <th>Notes</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dbMovements.length === 0 ? (
+                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>No movements recorded</td></tr>
+                  ) : (
+                    dbMovements.slice().reverse().map(log => {
+                      const user = dbUsers.find(u => u._id === log.updatedById);
+                      return (
+                        <tr key={log._id}>
+                          <td className="code-text" style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {new Date(log.timestamp).toLocaleString("en-US", { timeZone: timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </td>
+                          <td>
+                            <span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>
+                              {log.type}
+                            </span>
+                          </td>
+                          <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>
+                            {log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}
+                          </td>
+                          <td>{log.notes || "-"}</td>
+                          <td>{user?.fullName || "Unknown"}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
