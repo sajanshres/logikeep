@@ -180,6 +180,7 @@ export default function App() {
   const createProduct = useMutation(api.inventory.createProduct);
   const updateStock = useMutation(api.inventory.updateStock);
   const backfillPhase3 = useMutation(api.migrate.backfillPhase3);
+  const updateStatus = useMutation(api.packages.updateStatus);
 
   useEffect(() => {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -686,6 +687,33 @@ export default function App() {
   const loggedInDbUser = loggedInUser
     ? dbUsers.find((u) => u.email.toLowerCase() === loggedInUser.email.toLowerCase())
     : undefined;
+
+  const handleMarkArrived = async (packageId: Id<"packages">) => {
+    if (!loggedInDbUser?.branchId) return;
+    await updateStatus({ packageId, status: "arrived_at_branch", currentBranchId: loggedInDbUser.branchId, details: "Received at branch", updatedById: loggedInDbUser._id });
+  };
+
+  const handleDispatch = async (packageId: Id<"packages">) => {
+    if (!loggedInDbUser?.branchId) return;
+    const driver = window.prompt("Enter Driver Name:");
+    if (driver === null) return;
+    const vehicle = window.prompt("Enter Vehicle Number:");
+    if (vehicle === null) return;
+    await updateStatus({ packageId, status: "in_transit", currentBranchId: loggedInDbUser.branchId, details: "Dispatched from branch", updatedById: loggedInDbUser._id, driverName: driver, vehicleNumber: vehicle });
+  };
+
+  const handleOutForDelivery = async (packageId: Id<"packages">) => {
+    if (!loggedInDbUser?.branchId) return;
+    await updateStatus({ packageId, status: "out_for_delivery", currentBranchId: loggedInDbUser.branchId, details: "Out for local delivery", updatedById: loggedInDbUser._id });
+  };
+
+  const handleDeliver = async (packageId: Id<"packages">) => {
+    if (!loggedInDbUser?.branchId) return;
+    const receivedBy = window.prompt("Enter Receiver Name (Proof of Delivery):");
+    if (receivedBy === null) return;
+    const notes = window.prompt("Enter Delivery Notes (optional):") || "";
+    await updateStatus({ packageId, status: "delivered", currentBranchId: loggedInDbUser.branchId, details: "Package delivered", updatedById: loggedInDbUser._id, receivedBy, deliveryNotes: notes });
+  };
 
   const matchedVendor = loggedInUser
     ? dbVendors.find((v) => v.email.toLowerCase() === loggedInUser.email.toLowerCase())
@@ -1516,6 +1544,7 @@ export default function App() {
                     <th>Receiver</th>
                     <th>Status</th>
                     <th>Weight</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1537,6 +1566,20 @@ export default function App() {
                         <td>{p.receiverName}</td>
                         <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
                         <td className="code-text">{p.weight} kg</td>
+                        <td style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          {activeTab === "incoming" && p.status !== "arrived_at_branch" && p.status !== "delivered" && (
+                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkArrived(p._id)}>Mark Arrived</button>
+                          )}
+                          {activeTab === "outgoing" && p.status === "booked" && (
+                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleDispatch(p._id)}>Dispatch</button>
+                          )}
+                          {activeTab === "outgoing" && (p.status === "in_transit" || p.status === "arrived_at_branch") && (
+                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleOutForDelivery(p._id)}>Out for Delivery</button>
+                          )}
+                          {activeTab === "outgoing" && p.status === "out_for_delivery" && (
+                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto", background: "var(--success-color)", borderColor: "var(--success-color)" }} onClick={() => handleDeliver(p._id)}>Deliver</button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                 </tbody>
