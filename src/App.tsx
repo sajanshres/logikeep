@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, Pencil, Trash2, X } from "lucide-react";
+import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, X } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
+import NavBtn from "./components/NavBtn";
 import Dashboard from "./components/Dashboard";
 import Reports from "./components/Reports";
 import Inventory from "./components/Inventory";
 import Track from "./components/Track";
+import UsersTab from "./components/UsersTab";
+import BranchesTab from "./components/BranchesTab";
+import VendorsTab from "./components/VendorsTab";
 import "./App.css";
 
 const SETTINGS_KEY = "logikeep-settings";
@@ -1128,22 +1132,6 @@ export default function App() {
   const userInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
-  const ActionCell = ({ label, onEdit, onDelete }: { label: string; onEdit: () => void; onDelete: () => void }) => (
-    <td>
-      <div className="table-actions">
-        <button type="button" className="icon-btn" title={`Edit ${label}`} onClick={onEdit}><Pencil size={12} /></button>
-        <button type="button" className="icon-btn icon-btn-danger" title={`Delete ${label}`} onClick={onDelete}><Trash2 size={12} /></button>
-      </div>
-    </td>
-  );
-
-  const NavBtn = ({ tab, label, icon }: { tab: string; label: string; icon: React.ReactNode }) => (
-    <button onClick={() => setActiveTab(tab)} className={`nav-item-btn ${activeTab === tab ? "active" : ""}`}>
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-
   // LOGIN SCREEN
   if (!loggedInUser) {
     return (
@@ -1195,37 +1183,37 @@ export default function App() {
         <nav className="sidebar-nav">
           {role === "Admin" && (
             <>
-              <NavBtn tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
-              <NavBtn tab="users" label="User Management" icon={<Users size={14} />} />
-              <NavBtn tab="packages" label="Package Management" icon={<Package size={14} />} />
-              <NavBtn tab="branches" label="Branch Management" icon={<Building2 size={14} />} />
-              <NavBtn tab="vendors" label="Vendor Management" icon={<Handshake size={14} />} />
-              <NavBtn tab="reports" label="Reports" icon={<FileText size={14} />} />
-              <NavBtn tab="settings" label="Settings" icon={<Settings size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="users" label="User Management" icon={<Users size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="packages" label="Package Management" icon={<Package size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="branches" label="Branch Management" icon={<Building2 size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="vendors" label="Vendor Management" icon={<Handshake size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="reports" label="Reports" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="settings" label="Settings" icon={<Settings size={14} />} />
             </>
           )}
 
           {role === "Branch Staff" && (
             <>
-              <NavBtn tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
-              <NavBtn tab="packages" label="My Packages" icon={<Package size={14} />} />
-              <NavBtn tab="track" label="Track Package" icon={<Search size={14} />} />
-              <NavBtn tab="incoming" label="Incoming" icon={<FileText size={14} />} />
-              <NavBtn tab="outgoing" label="Outgoing" icon={<FileText size={14} />} />
-              <NavBtn tab="inventory" label="Inventory" icon={<Building2 size={14} />} />
-              <NavBtn tab="reports" label="Reports" icon={<FileText size={14} />} />
-              <NavBtn tab="profile" label="Branch Profile" icon={<Users size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="packages" label="My Packages" icon={<Package size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="track" label="Track Package" icon={<Search size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="incoming" label="Incoming" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="outgoing" label="Outgoing" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="inventory" label="Inventory" icon={<Building2 size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="reports" label="Reports" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="profile" label="Branch Profile" icon={<Users size={14} />} />
             </>
           )}
 
           {role === "Vendor" && (
             <>
-              <NavBtn tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
-              <NavBtn tab="packages" label="My Shipments" icon={<Package size={14} />} />
-              <NavBtn tab="pickup" label="Pickup Requests" icon={<FileText size={14} />} />
-              <NavBtn tab="track" label="Track Shipment" icon={<Search size={14} />} />
-              <NavBtn tab="invoices" label="Invoices" icon={<FileText size={14} />} />
-              <NavBtn tab="profile" label="Vendor Profile" icon={<Users size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="packages" label="My Shipments" icon={<Package size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="pickup" label="Pickup Requests" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="track" label="Track Shipment" icon={<Search size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="invoices" label="Invoices" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="profile" label="Vendor Profile" icon={<Users size={14} />} />
             </>
           )}
         </nav>
@@ -1366,216 +1354,67 @@ export default function App() {
 
         {/* User Management Tab */}
         {activeTab === "users" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <div className="module-toolbar-left">
-                <input type="text" placeholder="Search users..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                <select className="swiss-input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                  <option value="All">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="branch_staff">Branch Staff</option>
-                  <option value="vendor">Vendor</option>
-                </select>
-              </div>
-              <button className="swiss-btn" onClick={() => { resetUserForm(); setModalOpen("user"); }}>+ Add New User</button>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbUsers
-                    .filter((u) => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()) || u.name.toLowerCase().includes(headerSearch.toLowerCase()))
-                    .filter((u) => roleFilter === "All" || u.role === roleFilter)
-                    .map((u) => {
-                      const isActive = u.active ?? true;
-                      return (
-                      <tr key={u._id}>
-                        <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{u.name}</td>
-                        <td className="code-text">{u.email}</td>
-                        <td><span className="swiss-badge">{roleLabel(u.role)}</span></td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`status-toggle ${isActive ? "on" : ""}`}
-                            onClick={() => toggleUserStatus(u._id, isActive)}
-                            title={isActive ? "Active" : "Inactive"}
-                          >
-                            <span className="status-toggle-knob" />
-                          </button>
-                        </td>
-                        <ActionCell
-                          label={u.name}
-                          onEdit={() => openEditUser(u)}
-                          onDelete={async () => {
-                            if (confirm(`Remove user ${u.name}?`)) await removeUser({ userId: u._id });
-                          }}
-                        />
-                      </tr>
-                    );})}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <UsersTab
+            dbUsers={dbUsers}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            headerSearch={headerSearch}
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            roleLabel={roleLabel}
+            setModalOpen={setModalOpen}
+            openEditUser={openEditUser}
+            removeUser={removeUser}
+            resetUserForm={resetUserForm}
+            toggleUserStatus={toggleUserStatus}
+          />
         )}
 
         {/* Branch Management Tab */}
         {activeTab === "branches" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search branches..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button className="swiss-btn" onClick={() => { resetBranchForm(); setModalOpen("branch"); }}>+ Add New Branch</button>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Branch Name</th>
-                    <th>Branch Code</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbBranches
-                    .filter((b) => b.name.toLowerCase().includes(searchQuery.toLowerCase()) || b.code.toLowerCase().includes(searchQuery.toLowerCase()) || b.city.toLowerCase().includes(headerSearch.toLowerCase()))
-                    .map((b) => (
-                      <tr key={b._id}>
-                        <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{b.name}</td>
-                        <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: "bold" }}>{b.code}</td>
-                        <td>{b.city}{b.address ? `, ${b.address}` : ""}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`status-toggle ${(b.status ?? "active") === "active" ? "on" : ""}`}
-                            onClick={() => toggleBranchStatus(b._id, b.status)}
-                            title={(b.status ?? "active") === "active" ? "Active" : "Inactive"}
-                          >
-                            <span className="status-toggle-knob" />
-                          </button>
-                        </td>
-                        <ActionCell
-                          label={b.name}
-                          onEdit={() => openEditBranch(b)}
-                          onDelete={async () => {
-                            if (confirm(`Deactivate branch ${b.name}?`)) await removeBranch({ branchId: b._id });
-                          }}
-                        />
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <BranchesTab
+            dbBranches={dbBranches}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            headerSearch={headerSearch}
+            setModalOpen={setModalOpen}
+            openEditBranch={openEditBranch}
+            removeBranch={removeBranch}
+            resetBranchForm={resetBranchForm}
+            toggleBranchStatus={toggleBranchStatus}
+          />
         )}
 
         {/* Package Management Tab */}
         {activeTab === "packages" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search packages..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              {role === "Admin" && (
-                <button className="swiss-btn" onClick={() => { resetPackageForm(); setModalOpen("package"); }}>+ Add New Package</button>
-              )}
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th>
-                    <th>Sender</th>
-                    <th>Receiver</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visiblePackages
-                    .filter((p) => p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) || p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) || p.receiverName.toLowerCase().includes(searchQuery.toLowerCase()) || p.trackingNumber.toLowerCase().includes(headerSearch.toLowerCase()))
-                    .map((p) => (
-                      <tr key={p._id}>
-                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
-                        <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{p.senderName}</td>
-                        <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{p.receiverName}</td>
-                        <td><span className={`swiss-badge ${p.status === "delivered" ? "active" : ""}`}>{statusLabel(p.status)}</span></td>
-                        <td className="code-text">{new Date(p.createdAt).toLocaleDateString()}</td>
-                        <td>
-                          <div className="table-actions" style={{ alignItems: "center", gap: 8 }}>
-                            <button type="button" className="icon-btn" title="Track package" onClick={() => openTrackPackage(p.trackingNumber)}><Search size={12} /></button>
-                            {role === "Admin" && (
-                              <>
-                                <button type="button" className="icon-btn" title="Edit package" onClick={() => openEditPackage(p)}><Pencil size={12} /></button>
-                                <button type="button" className="swiss-btn" style={{ padding: "2px 8px", fontSize: "10px", minWidth: "auto" }} title="Update Status" onClick={() => handleAdminUpdateStatus(p._id)}>Update</button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <PackagesTab
+            visiblePackages={visiblePackages}
+            role={role}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            headerSearch={headerSearch}
+            setModalOpen={setModalOpen}
+            openEditPackage={openEditPackage}
+            openTrackPackage={openTrackPackage}
+            resetPackageForm={resetPackageForm}
+            handleAdminUpdateStatus={handleAdminUpdateStatus}
+            statusLabel={statusLabel}
+          />
         )}
 
         {/* vendor management tab */}
         {activeTab === "vendors" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search vendors..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button className="swiss-btn" onClick={() => { resetVendorForm(); setModalOpen("vendor"); }}>+ Add New Vendor</button>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Vendor Name</th>
-                    <th>Vendor Type</th>
-                    <th>Contact Person</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbVendors
-                    .filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.name.toLowerCase().includes(headerSearch.toLowerCase()))
-                    .map((v) => (
-                      <tr key={v._id}>
-                        <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{v.name}</td>
-                        <td><span className="swiss-badge">{v.partnerType || "Courier"}</span></td>
-                        <td>{v.contactPerson}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`status-toggle ${v.status === "active" ? "on" : ""}`}
-                            onClick={() => toggleVendorStatus(v._id, v.status)}
-                            title={v.status === "active" ? "Active" : "Inactive"}
-                          >
-                            <span className="status-toggle-knob" />
-                          </button>
-                        </td>
-                        <ActionCell
-                          label={v.name}
-                          onEdit={() => openEditVendor(v)}
-                          onDelete={async () => {
-                            if (confirm(`Deactivate vendor ${v.name}?`)) await removeVendor({ vendorId: v._id });
-                          }}
-                        />
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <VendorsTab
+            dbVendors={dbVendors}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            headerSearch={headerSearch}
+            setModalOpen={setModalOpen}
+            openEditVendor={openEditVendor}
+            removeVendor={removeVendor}
+            resetVendorForm={resetVendorForm}
+            toggleVendorStatus={toggleVendorStatus}
+          />
         )}
 
         {/* Track Tab */}
