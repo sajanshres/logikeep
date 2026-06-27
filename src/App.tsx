@@ -4,6 +4,8 @@ import { api } from "../convex/_generated/api";
 import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, Pencil, Trash2, X } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
+import Dashboard from "./components/Dashboard";
+import Reports from "./components/Reports";
 import "./App.css";
 
 const SETTINGS_KEY = "logikeep-settings";
@@ -754,8 +756,21 @@ export default function App() {
         ];
       });
       csvData = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    } else if (reportTab === "analytics") {
+      const rows = [
+        ["Total Shipments", dbPackages.length],
+        ["Delivered", reportDelivered],
+        ["In Transit", reportInTransit],
+        ["Returned", reportReturned],
+        ["Delivery Success Rate", `${reportSuccessRate}%`],
+        ["Total Products", dbInventory.length],
+        ["Low Stock Items", reportLowStock],
+        ["Stock Value", `Rs ${reportStockValue}`],
+        ["Active Vendors", dbVendors.length],
+      ];
+      csvData = [["Metric", "Value"].join(","), ...rows.map(r => r.join(","))].join("\n");
     }
-    
+
     if (!csvData) return;
     const blob = new Blob([csvData], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -819,8 +834,8 @@ export default function App() {
       users: "User Management",
       packages: userRole === "Admin" ? "Package Management" : userRole === "Branch Staff" ? "My Packages" : "My Shipments",
       branches: "Branch Management",
-      vendors: "Partner Management",
-      partners: "Partner Management",
+      vendors: "Vendor Management",
+      partners: "Vendor Management",
       inventory: "Inventory",
       reports: "Reports",
       settings: "Settings",
@@ -930,6 +945,14 @@ export default function App() {
     }
     return true;
   });
+
+  // numbers for the analytics summary report
+  const reportDelivered = dbPackages.filter((p) => p.status === "delivered").length;
+  const reportInTransit = dbPackages.filter((p) => p.status === "in_transit" || p.status === "out_for_delivery").length;
+  const reportReturned = dbPackages.filter((p) => p.status === "returned").length;
+  const reportSuccessRate = dbPackages.length > 0 ? Math.round((reportDelivered / dbPackages.length) * 100) : 0;
+  const reportLowStock = dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
+  const reportStockValue = dbInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
   const toggleUserStatus = async (id: Id<"users">, current: boolean) => {
     await updateUser({ userId: id, active: !current });
@@ -1320,182 +1343,23 @@ export default function App() {
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {role === "Admin" ? (
-              <div className="grid-4">
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Total Packages</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.length}</p>
-                </div>
-                <div className="swiss-card" style={{ borderColor: "var(--brand-color)" }}>
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--brand-color)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Active Shipments</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{activeShipments}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Delivered</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{deliveredCount}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Success Rate</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{successRate}%</p>
-                </div>
-              </div>
-            ) : role === "Branch Staff" ? (
-              <div className="grid-4">
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Total Packages</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Incoming</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "booked" || p.status === "in_transit").length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Delivered</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "delivered").length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Stock Items</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbInventory.length}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid-4">
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Active Shipments</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status !== "delivered" && p.status !== "returned").length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Delivered</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "delivered").length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Partner Vendors</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbVendors.length}</p>
-                </div>
-                <div className="swiss-card">
-                  <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Branches</h4>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbBranches.length}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Charts */}
-            <div className="grid-3" style={{ gridTemplateColumns: "2fr 1fr" }}>
-              <div className="swiss-card">
-                <h3 className="swiss-title" style={{ fontSize: 14, borderBottom: "1px solid var(--border-color)", paddingBottom: 10, marginBottom: 16, textTransform: "uppercase" }}>
-                  {role === "Branch Staff" ? "Weekly Package Volume" : "Shipment Overview"}
-                </h3>
-                <div style={{ height: 180, width: "100%" }}>
-                  <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="glowGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--brand-color)" stopOpacity="0.15" />
-                        <stop offset="100%" stopColor="var(--brand-color)" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <line x1="0" y1="50" x2="500" y2="50" stroke="var(--border-color)" strokeWidth="0.5" />
-                    <line x1="0" y1="100" x2="500" y2="100" stroke="var(--border-color)" strokeWidth="0.5" />
-                    <line x1="0" y1="150" x2="500" y2="150" stroke="var(--border-color)" strokeWidth="0.5" />
-                    <path d={`${lineChartPath} L 450 200 L 50 200 Z`} fill="url(#glowGrad)" />
-                    {role === "Branch Staff" ? (
-                      <>
-                        {weeklyCounts.map((c, i) => (
-                          <rect key={i} x={75 + i * 100} y={150 - (c / barChartMax) * 110} width={20} height={(c / barChartMax) * 110} fill="var(--brand-color)" />
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        <path d={lineChartPath} fill="none" stroke="var(--brand-color)" strokeWidth="2.5" />
-                        {weeklyCounts.map((c, i) => {
-                          const x = 47 + i * 100;
-                          const y = 147 - (c / barChartMax) * 110;
-                          return <rect key={i} x={x} y={y} width={6} height={6} fill="var(--bg-color)" stroke="var(--brand-color)" strokeWidth="1" />;
-                        })}
-                      </>
-                    )}
-                  </svg>
-                </div>
-              </div>
-              <div className="swiss-card">
-                <h3 className="swiss-title" style={{ fontSize: 14, borderBottom: "1px solid var(--border-color)", paddingBottom: 10, marginBottom: 16, textTransform: "uppercase" }}>Shipments by Direction</h3>
-                <div className="pie-wrap">
-                  <svg width="120" height="120" viewBox="0 0 120 120">
-                    {(() => {
-                      let angle = 0;
-                      return directionSlices.map((slice, i) => {
-                        const pct = slice.count / directionTotal;
-                        const startAngle = angle;
-                        angle += pct * 360;
-                        const endAngle = angle;
-                        const x1 = 60 + 50 * Math.cos((Math.PI * startAngle) / 180);
-                        const y1 = 60 + 50 * Math.sin((Math.PI * startAngle) / 180);
-                        const x2 = 60 + 50 * Math.cos((Math.PI * endAngle) / 180);
-                        const y2 = 60 + 50 * Math.sin((Math.PI * endAngle) / 180);
-                        const large = pct > 0.5 ? 1 : 0;
-                        return (
-                          <path
-                            key={i}
-                            d={`M 60 60 L ${x1} ${y1} A 50 50 0 ${large} 1 ${x2} ${y2} Z`}
-                            fill={slice.color}
-                          />
-                        );
-                      });
-                    })()}
-                  </svg>
-                  <div className="pie-legend">
-                    {directionSlices.map((slice) => (
-                      <div key={slice.label} className="pie-legend-item">
-                        <span className="pie-dot" style={{ background: slice.color }} />
-                        <span>{slice.label}</span>
-                        <span className="code-text" style={{ marginLeft: "auto", fontWeight: 700 }}>{slice.count}</span>
-                      </div>
-                    ))}
-                    {directionSlices.length === 0 && (
-                      <span style={{ fontSize: 12, color: "var(--badge-text)" }}>No shipment data yet</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Active packages table */}
-            <div className="swiss-card">
-              <h3 className="swiss-title" style={{ fontSize: 14, borderBottom: "1px solid var(--border-color)", paddingBottom: 10, marginBottom: 16, textTransform: "uppercase" }}>Active Cargo Shipments</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tracking ID</th>
-                      <th>Sender</th>
-                      <th>Receiver</th>
-                      <th>Destination</th>
-                      <th>Type</th>
-                      <th>Weight</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                  {dashboardPackages.slice(0, 5).map((pkg) => (
-                      <tr key={pkg._id}>
-                        <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: "bold" }}>{pkg.trackingNumber}</td>
-                        <td>{pkg.senderName}</td>
-                        <td>{pkg.receiverName}</td>
-                        <td>{branchName(pkg.destinationBranchId)}</td>
-                        <td>{pkg.packageType}</td>
-                        <td className="code-text">{pkg.weight} kg</td>
-                        <td>
-                          <span className={`swiss-badge ${pkg.status === "delivered" ? "active" : ""}`} style={{ fontSize: 9 }}>
-                            {statusLabel(pkg.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <Dashboard
+            role={role}
+            dashboardPackages={dashboardPackages}
+            activeShipments={activeShipments}
+            deliveredCount={deliveredCount}
+            successRate={successRate}
+            dbInventory={dbInventory}
+            dbVendors={dbVendors}
+            dbBranches={dbBranches}
+            lineChartPath={lineChartPath}
+            weeklyCounts={weeklyCounts}
+            barChartMax={barChartMax}
+            directionSlices={directionSlices}
+            directionTotal={directionTotal}
+            branchName={branchName}
+            statusLabel={statusLabel}
+          />
         )}
 
         {/* User Management Tab */}
@@ -1661,18 +1525,18 @@ export default function App() {
           </div>
         )}
 
-        {/* Partner Management Tab */}
+        {/* vendor management tab */}
         {activeTab === "vendors" && (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
-              <input type="text" placeholder="Search partners..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button className="swiss-btn" onClick={() => { resetVendorForm(); setModalOpen("vendor"); }}>+ Add New Partner</button>
+              <input type="text" placeholder="Search vendors..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <button className="swiss-btn" onClick={() => { resetVendorForm(); setModalOpen("vendor"); }}>+ Add New Vendor</button>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table>
                 <thead>
                   <tr>
-                    <th>Venor Name</th>
+                    <th>Vendor Name</th>
                     <th>Vendor Type</th>
                     <th>Contact Person</th>
                     <th>Status</th>
@@ -1701,7 +1565,7 @@ export default function App() {
                           label={v.name}
                           onEdit={() => openEditVendor(v)}
                           onDelete={async () => {
-                            if (confirm(`Deactivate partner ${v.name}?`)) await removeVendor({ vendorId: v._id });
+                            if (confirm(`Deactivate vendor ${v.name}?`)) await removeVendor({ vendorId: v._id });
                           }}
                         />
                       </tr>
@@ -1766,7 +1630,7 @@ export default function App() {
                     <div>
                       <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Assigned Carrier</span>
                       <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Partner Carrier"}
+                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Vendor Carrier"}
                       </span>
                     </div>
                   )}
@@ -1954,147 +1818,35 @@ export default function App() {
 
         {/* Reports Tab */}
         {activeTab === "reports" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", gap: 16, borderBottom: "1px solid var(--border-color)", paddingBottom: 16 }}>
-              <button 
-                className={reportTab === "shipments" ? "swiss-btn" : "secondary-btn"} 
-                onClick={() => setReportTab("shipments")}
-              >Shipments Ledger</button>
-              <button 
-                className={reportTab === "inventory" ? "swiss-btn" : "secondary-btn"} 
-                onClick={() => setReportTab("inventory")}
-              >Stock Movements</button>
-              <button 
-                className={reportTab === "analytics" ? "swiss-btn" : "secondary-btn"} 
-                onClick={() => setReportTab("analytics")}
-              >Analytics Summary</button>
-              <div style={{ marginLeft: "auto" }}>
-                <button className="swiss-btn" style={{ background: "var(--brand-color)" }} onClick={exportToCSV}>Export CSV</button>
-              </div>
-            </div>
-
-            {reportTab === "shipments" && (
-              <div className="swiss-card wireframe-panel">
-                <div className="report-filters">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date From</label>
-                    <input type="date" className="swiss-input" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Date To</label>
-                    <input type="date" className="swiss-input" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Branch</label>
-                    <select className="swiss-input" value={reportBranch} onChange={(e) => setReportBranch(e.target.value)}>
-                      <option value="All">All Branches</option>
-                      {dbBranches.map((b) => (
-                        <option key={b._id} value={b.name}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--title-color)" }}>Partner</label>
-                    <select className="swiss-input" value={reportPartner} onChange={(e) => setReportPartner(e.target.value)}>
-                      <option value="All">All Partners</option>
-                      {dbVendors.map((v) => (
-                        <option key={v._id} value={v.name}>{v.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div style={{ overflowX: "auto" }}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Tracking ID</th>
-                        <th>Sender</th>
-                        <th>Receiver</th>
-                        <th>Destination</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredReportPackages.map((p) => (
-                        <tr key={p._id}>
-                          <td className="code-text" style={{ color: "var(--brand-color)", fontWeight: 700 }}>{p.trackingNumber}</td>
-                          <td>{p.senderName}</td>
-                          <td>{p.receiverName}</td>
-                          <td>{branchName(p.destinationBranchId)}</td>
-                          <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
-                          <td className="code-text">{new Date(p.createdAt).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                      {filteredReportPackages.length === 0 && (
-                        <tr>
-                          <td colSpan={6} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No shipments match the selected filters</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {reportTab === "inventory" && (
-              <div className="swiss-card wireframe-panel">
-                <div style={{ overflowX: "auto" }}>
-                  <table className="swiss-table" style={{ width: "100%", textAlign: "left", fontSize: 13 }}>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Change</th>
-                        <th>Notes</th>
-                        <th>Product</th>
-                        <th>User</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dbAllMovements.slice().reverse().map((log) => {
-                        const product = dbInventory.find(p => p._id === log.productId);
-                        const user = dbUsers.find(u => u._id === log.updatedById);
-                        return (
-                          <tr key={log._id}>
-                            <td className="code-text" style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(log.timestamp).toLocaleString("en-US", { timeZone: timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
-                            <td><span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>{log.type}</span></td>
-                            <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>{log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}</td>
-                            <td>{log.notes || "-"}</td>
-                            <td>{product?.productName || "Unknown"}</td>
-                            <td>{user?.name || "Unknown"}</td>
-                          </tr>
-                        );
-                      })}
-                      {dbAllMovements.length === 0 && (
-                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--badge-text)" }}>No stock movements recorded</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {reportTab === "analytics" && (
-              <div className="grid-3" style={{ marginTop: 16 }}>
-                <div className="swiss-card stat-card" style={{ padding: 24 }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Total Shipments</h4>
-                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbPackages.length}</div>
-                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>All time volume</div>
-                </div>
-                <div className="swiss-card stat-card" style={{ padding: 24 }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Total Products</h4>
-                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbInventory.length}</div>
-                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>In inventory</div>
-                </div>
-                <div className="swiss-card stat-card" style={{ padding: 24 }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Active Partners</h4>
-                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbVendors.length}</div>
-                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>Couriers & Suppliers</div>
-                </div>
-              </div>
-            )}
-          </div>
+          <Reports
+            reportTab={reportTab}
+            setReportTab={setReportTab}
+            exportToCSV={exportToCSV}
+            reportDateFrom={reportDateFrom}
+            setReportDateFrom={setReportDateFrom}
+            reportDateTo={reportDateTo}
+            setReportDateTo={setReportDateTo}
+            reportBranch={reportBranch}
+            setReportBranch={setReportBranch}
+            reportPartner={reportPartner}
+            setReportPartner={setReportPartner}
+            dbBranches={dbBranches}
+            dbVendors={dbVendors}
+            dbPackages={dbPackages}
+            dbInventory={dbInventory}
+            dbUsers={dbUsers}
+            dbAllMovements={dbAllMovements}
+            filteredReportPackages={filteredReportPackages}
+            reportDelivered={reportDelivered}
+            reportInTransit={reportInTransit}
+            reportReturned={reportReturned}
+            reportSuccessRate={reportSuccessRate}
+            reportLowStock={reportLowStock}
+            reportStockValue={reportStockValue}
+            branchName={branchName}
+            statusLabel={statusLabel}
+            timezone={timezone}
+          />
         )}
 
         {/* Settings Tab */}
@@ -2259,11 +2011,11 @@ export default function App() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13 }}>
-                <div><strong>Partner Agency Name:</strong> {matchedVendor?.name || "N/A"}</div>
+                <div><strong>Vendor Agency Name:</strong> {matchedVendor?.name || "N/A"}</div>
                 <div><strong>Contact Representative:</strong> {matchedVendor?.contactPerson || loggedInUser.name}</div>
                 <div><strong>Representative Email:</strong> {loggedInUser.email}</div>
                 <div><strong>Agency Status:</strong> <span className={`swiss-badge ${matchedVendor?.status === "active" ? "active" : ""}`}>{matchedVendor?.status === "active" ? "Active" : "Inactive"}</span></div>
-                <div><strong>Description:</strong> External logistics partner authorized to execute long-haul transit dispatch and cargo pick-up routes.</div>
+                <div><strong>Description:</strong> External logistics vendor authorized to execute long-haul transit dispatch and cargo pick-up routes.</div>
               </div>
             )}
           </div>
@@ -2656,17 +2408,17 @@ export default function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingVendorId ? "Edit Partner" : "Add New Partner"}</h2>
+              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingVendorId ? "Edit Vendor" : "Add New Vendor"}</h2>
               <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetVendorForm(); setModalOpen(null); }}>✕</button>
             </div>
             <form onSubmit={handleSaveVendor} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="grid-2">
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Partner Name</label>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor Name</label>
                   <input type="text" required className="swiss-input" value={newVendorName} onChange={(e) => setNewVendorName(e.target.value)} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Partner Type</label>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor Type</label>
                   <select className="swiss-input" value={newVendorType} onChange={(e) => setNewVendorType(e.target.value)}>
                     <option value="Courier">Courier</option>
                     <option value="Supplier">Supplier</option>
@@ -2695,7 +2447,7 @@ export default function App() {
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
                 <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">{editingVendorId ? "Save Partner" : "Create Partner"}</button>
+                <button type="submit" className="swiss-btn">{editingVendorId ? "Save Vendor" : "Create Vendor"}</button>
               </div>
             </form>
           </div>
