@@ -11,6 +11,7 @@ import Inventory from "./components/Inventory";
 import Track from "./components/Track";
 import UsersTab from "./components/UsersTab";
 import BranchesTab from "./components/BranchesTab";
+import PackagesTab from "./components/PackagesTab";
 import VendorsTab from "./components/VendorsTab";
 import "./App.css";
 
