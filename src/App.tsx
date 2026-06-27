@@ -1174,7 +1174,7 @@ export default function App() {
               <NavBtn tab="users" label="User Management" icon={<Users size={14} />} />
               <NavBtn tab="packages" label="Package Management" icon={<Package size={14} />} />
               <NavBtn tab="branches" label="Branch Management" icon={<Building2 size={14} />} />
-              <NavBtn tab="vendors" label="Partner Management" icon={<Handshake size={14} />} />
+              <NavBtn tab="vendors" label="Vendor Management" icon={<Handshake size={14} />} />
               <NavBtn tab="reports" label="Reports" icon={<FileText size={14} />} />
               <NavBtn tab="settings" label="Settings" icon={<Settings size={14} />} />
             </>
@@ -1672,8 +1672,8 @@ export default function App() {
               <table>
                 <thead>
                   <tr>
-                    <th>Partner Name</th>
-                    <th>Partner Type</th>
+                    <th>Venor Name</th>
+                    <th>Vendor Type</th>
                     <th>Contact Person</th>
                     <th>Status</th>
                     <th>Action</th>
