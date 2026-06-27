@@ -13,6 +13,11 @@ import UsersTab from "./components/UsersTab";
 import BranchesTab from "./components/BranchesTab";
 import PackagesTab from "./components/PackagesTab";
 import VendorsTab from "./components/VendorsTab";
+import PickupTab from "./components/PickupTab";
+import InvoicesTab from "./components/InvoicesTab";
+import SettingsTab from "./components/SettingsTab";
+import ProfileTab from "./components/ProfileTab";
+import CargoTab from "./components/CargoTab";
 import "./App.css";
 
 const SETTINGS_KEY = "logikeep-settings";
@@ -1435,114 +1440,25 @@ export default function App() {
 
         {/* Pickup Requests Tab */}
         {activeTab === "pickup" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search pickup requests..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <span className="swiss-badge active">{vendorPickupPackages.length} pending</span>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th>
-                    <th>Sender</th>
-                    <th>Destination</th>
-                    <th>Weight</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendorPickupPackages
-                    .filter((p) =>
-                      p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      branchName(p.destinationBranchId).toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((p) => (
-                      <tr key={p._id}>
-                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
-                        <td>{p.senderName}</td>
-                        <td>{branchName(p.destinationBranchId)}</td>
-                        <td className="code-text">{p.weight} kg</td>
-                        <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
-                        <td>
-                          <button
-                            type="button"
-                            className="swiss-btn"
-                            style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }}
-                            onClick={async () => {
-                              if (!loggedInDbUser) return;
-                              await updateStatus({
-                                packageId: p._id,
-                                status: "in_transit",
-                                currentBranchId: p.currentBranchId,
-                                details: "Pickup accepted by carrier",
-                                updatedById: loggedInDbUser._id,
-                                driverName: p.driverName || undefined,
-                                vehicleNumber: p.vehicleNumber || undefined,
-                              });
-                            }}
-                          >
-                            Accept Pickup
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  {vendorPickupPackages.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No pickup requests assigned yet</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <PickupTab
+            vendorPickupPackages={vendorPickupPackages}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            loggedInDbUser={loggedInDbUser}
+            updateStatus={updateStatus}
+            branchName={branchName}
+            statusLabel={statusLabel}
+          />
         )}
 
         {/* Invoices Tab */}
         {activeTab === "invoices" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search invoices..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <span className="swiss-badge active">{vendorInvoicePackages.length} paid / delivered</span>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th>
-                    <th>Route</th>
-                    <th>Weight</th>
-                    <th>Delivered</th>
-                    <th>POD Recipient</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendorInvoicePackages
-                    .filter((p) =>
-                      p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      branchName(p.destinationBranchId).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      p.receiverName.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((p) => (
-                      <tr key={p._id}>
-                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
-                        <td>{branchName(p.originBranchId)} → {branchName(p.destinationBranchId)}</td>
-                        <td className="code-text">{p.weight} kg</td>
-                        <td className="code-text">{new Date(p.updatedAt).toLocaleDateString()}</td>
-                        <td>{p.receivedBy || "—"}</td>
-                      </tr>
-                    ))}
-                  {vendorInvoicePackages.length === 0 && (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: "center", color: "var(--badge-text)", padding: 24 }}>No delivered shipments yet</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <InvoicesTab
+            vendorInvoicePackages={vendorInvoicePackages}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            branchName={branchName}
+          />
         )}
 
         {/* Reports Tab */}
@@ -1580,174 +1496,59 @@ export default function App() {
 
         {/* Settings Tab */}
         {activeTab === "settings" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="settings-tabs">
-              <button type="button" className={`settings-tab-btn ${settingsTab === "general" ? "active" : ""}`} onClick={() => setSettingsTab("general")}>General Settings</button>
-              <button type="button" className={`settings-tab-btn ${settingsTab === "security" ? "active" : ""}`} onClick={() => setSettingsTab("security")}>Security</button>
-              <button type="button" className={`settings-tab-btn ${settingsTab === "notifications" ? "active" : ""}`} onClick={() => setSettingsTab("notifications")}>Notifications</button>
-            </div>
-            {settingsTab === "general" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 480 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Portal Name</label>
-                  <input type="text" className="swiss-input" value={portalName} onChange={(e) => setPortalName(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Default Branch</label>
-                  <select className="swiss-input" value={defaultBranch} onChange={(e) => setDefaultBranch(e.target.value)}>
-                    <option value="">Select branch</option>
-                    {dbBranches.map((b) => (
-                      <option key={b._id} value={b.name}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Timezone</label>
-                  <select className="swiss-input" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-                    <option value="Asia/Kathmandu">Asia/Kathmandu (NPT)</option>
-                  </select>
-                </div>
-                <button type="button" className="swiss-btn" style={{ alignSelf: "flex-start" }} onClick={saveSettings}>
-                  {settingsSaved ? "Saved" : "Save Changes"}
-                </button>
-              </div>
-            )}
-            {settingsTab === "security" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 480 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Current Password</label>
-                  <input type="password" className="swiss-input" value={securityCurrent} onChange={(e) => setSecurityCurrent(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>New Password</label>
-                  <input type="password" className="swiss-input" value={securityNew} onChange={(e) => setSecurityNew(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Confirm Password</label>
-                  <input type="password" className="swiss-input" value={securityConfirm} onChange={(e) => setSecurityConfirm(e.target.value)} />
-                </div>
-                <button type="button" className="swiss-btn" style={{ alignSelf: "flex-start" }} onClick={handleUpdatePassword}>
-                  {settingsSaved ? "Password Updated" : "Update Password"}
-                </button>
-              </div>
-            )}
-            {settingsTab === "notifications" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
-                <label className="flex-center" style={{ justifyContent: "space-between", fontSize: 13 }}>
-                  <span>Low stock alerts</span>
-                  <input type="checkbox" checked={notifyLowStock} onChange={(e) => setNotifyLowStock(e.target.checked)} />
-                </label>
-                <label className="flex-center" style={{ justifyContent: "space-between", fontSize: 13 }}>
-                  <span>Delivery status updates</span>
-                  <input type="checkbox" checked={notifyDelivery} onChange={(e) => setNotifyDelivery(e.target.checked)} />
-                </label>
-                <label className="flex-center" style={{ justifyContent: "space-between", fontSize: 13 }}>
-                  <span>New package bookings</span>
-                  <input type="checkbox" checked={notifyBooking} onChange={(e) => setNotifyBooking(e.target.checked)} />
-                </label>
-                <label className="flex-center" style={{ justifyContent: "space-between", fontSize: 13 }}>
-                  <span>Weekly summary report</span>
-                  <input type="checkbox" checked={notifyWeekly} onChange={(e) => setNotifyWeekly(e.target.checked)} />
-                </label>
-                <button type="button" className="swiss-btn" style={{ alignSelf: "flex-start", marginTop: 8 }} onClick={saveSettings}>
-                  {settingsSaved ? "Saved" : "Save Preferences"}
-                </button>
-              </div>
-            )}
-          </div>
+          <SettingsTab
+            settingsTab={settingsTab}
+            setSettingsTab={setSettingsTab}
+            portalName={portalName}
+            setPortalName={setPortalName}
+            defaultBranch={defaultBranch}
+            setDefaultBranch={setDefaultBranch}
+            timezone={timezone}
+            setTimezone={setTimezone}
+            dbBranches={dbBranches}
+            securityCurrent={securityCurrent}
+            setSecurityCurrent={setSecurityCurrent}
+            securityNew={securityNew}
+            setSecurityNew={setSecurityNew}
+            securityConfirm={securityConfirm}
+            setSecurityConfirm={setSecurityConfirm}
+            handleUpdatePassword={handleUpdatePassword}
+            notifyLowStock={notifyLowStock}
+            setNotifyLowStock={setNotifyLowStock}
+            notifyDelivery={notifyDelivery}
+            setNotifyDelivery={setNotifyDelivery}
+            notifyBooking={notifyBooking}
+            setNotifyBooking={setNotifyBooking}
+            notifyWeekly={notifyWeekly}
+            setNotifyWeekly={setNotifyWeekly}
+            settingsSaved={settingsSaved}
+            saveSettings={saveSettings}
+          />
         )}
 
         {/* Incoming / Outgoing Tab */}
         {(activeTab === "incoming" || activeTab === "outgoing") && (
-          <div className="swiss-card">
-            <h3 className="swiss-title" style={{ fontSize: 16, marginBottom: 16, textTransform: "uppercase" }}>
-              {activeTab === "incoming" ? "Incoming Cargo List" : "Outgoing Cargo List"}
-            </h3>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th>
-                    <th>Sender</th>
-                    <th>Receiver</th>
-                    <th>Status</th>
-                    <th>Weight</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbPackages
-                    .filter((p) => {
-                      const userBranchId = loggedInDbUser?.branchId;
-                      if (!userBranchId) return false;
-                      if (activeTab === "incoming") {
-                        return (
-                          (p.destinationBranchId === userBranchId && p.status === "in_transit") ||
-                          (p.currentBranchId === userBranchId && p.status === "arrived_at_branch" && p.currentBranchId !== p.destinationBranchId)
-                        );
-                      }
-                      return p.currentBranchId === userBranchId &&
-                        (p.status === "booked" || p.status === "in_transit" || p.status === "arrived_at_branch" || p.status === "out_for_delivery");
-                    })
-                    .map((p) => (
-                      <tr key={p._id}>
-                        <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>
-                        <td>{p.senderName}</td>
-                        <td>{p.receiverName}</td>
-                        <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
-                        <td className="code-text">{p.weight} kg</td>
-                        <td style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                          {activeTab === "incoming" && p.status === "in_transit" && (
-                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkArrived(p._id)}>Mark Arrived</button>
-                          )}
-                          {activeTab === "incoming" && p.status === "arrived_at_branch" && p.currentBranchId !== p.destinationBranchId && (
-                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleForwardToHub(p._id)}>Forward to Hub</button>
-                          )}
-                          {activeTab === "outgoing" && p.status === "booked" && (
-                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleDispatch(p._id)}>Dispatch</button>
-                          )}
-                          {activeTab === "outgoing" && (p.status === "in_transit" || p.status === "arrived_at_branch") && (
-                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleOutForDelivery(p._id)}>Out for Delivery</button>
-                          )}
-                          {activeTab === "outgoing" && (p.status === "arrived_at_branch" || p.status === "out_for_delivery") && (
-                            <button className="secondary-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkReturned(p._id)}>Mark Returned</button>
-                          )}
-                          {activeTab === "outgoing" && p.status === "out_for_delivery" && (
-                            <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto", background: "var(--success-color)", borderColor: "var(--success-color)" }} onClick={() => handleDeliver(p._id)}>Deliver</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <CargoTab
+            activeTab={activeTab}
+            dbPackages={dbPackages}
+            loggedInDbUser={loggedInDbUser}
+            handleDispatch={handleDispatch}
+            handleMarkArrived={handleMarkArrived}
+            handleOutForDelivery={handleOutForDelivery}
+            handleDeliver={handleDeliver}
+            handleMarkReturned={handleMarkReturned}
+            handleForwardToHub={handleForwardToHub}
+            statusLabel={statusLabel}
+          />
         )}
 
         {/* Profile Tab */}
         {activeTab === "profile" && (
-          <div className="swiss-card" style={{ maxWidth: 600, margin: "0 auto", width: "100%" }}>
-            <h3 className="swiss-title" style={{ fontSize: 18, marginBottom: 20, textTransform: "uppercase" }}>
-              {role === "Branch Staff" ? "Branch Profile Hub" : "Vendor Profile Hub"}
-            </h3>
-            {role === "Branch Staff" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13 }}>
-                <div><strong>Branch Depot Name:</strong> {loggedInUser.hub}</div>
-                <div><strong>Assigned Manager:</strong> {loggedInUser.name}</div>
-                <div><strong>Corporate Email:</strong> {loggedInUser.email}</div>
-                <div><strong>Branch Status:</strong> <span className="swiss-badge active">{loggedInUser.status}</span></div>
-                <div><strong>Description:</strong> Regional transit sorting hub responsible for package processing and final receiver dispatch.</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13 }}>
-                <div><strong>Vendor Agency Name:</strong> {matchedVendor?.name || "N/A"}</div>
-                <div><strong>Contact Representative:</strong> {matchedVendor?.contactPerson || loggedInUser.name}</div>
-                <div><strong>Representative Email:</strong> {loggedInUser.email}</div>
-                <div><strong>Agency Status:</strong> <span className={`swiss-badge ${matchedVendor?.status === "active" ? "active" : ""}`}>{matchedVendor?.status === "active" ? "Active" : "Inactive"}</span></div>
-                <div><strong>Description:</strong> External logistics vendor authorized to execute long-haul transit dispatch and cargo pick-up routes.</div>
-              </div>
-            )}
-          </div>
+          <ProfileTab
+            role={role}
+            loggedInUser={loggedInUser}
+            matchedVendor={matchedVendor}
+          />
         )}
 
         {/* Inventory Tab */}
