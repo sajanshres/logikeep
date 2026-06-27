@@ -955,7 +955,6 @@ export default function App() {
   const reportSuccessRate = dbPackages.length > 0 ? Math.round((reportDelivered / dbPackages.length) * 100) : 0;
   const reportLowStock = dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
   const reportStockValue = dbInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  console.log("render", activeTab);
 
   const toggleUserStatus = async (id: Id<"users">, current: boolean) => {
     await updateUser({ userId: id, active: !current });
