@@ -6,6 +6,8 @@ import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
 import Dashboard from "./components/Dashboard";
 import Reports from "./components/Reports";
+import Inventory from "./components/Inventory";
+import Track from "./components/Track";
 import "./App.css";
 
 const SETTINGS_KEY = "logikeep-settings";
@@ -953,6 +955,7 @@ export default function App() {
   const reportSuccessRate = dbPackages.length > 0 ? Math.round((reportDelivered / dbPackages.length) * 100) : 0;
   const reportLowStock = dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
   const reportStockValue = dbInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  console.log("render", activeTab);
 
   const toggleUserStatus = async (id: Id<"users">, current: boolean) => {
     await updateUser({ userId: id, active: !current });
@@ -1578,130 +1581,17 @@ export default function App() {
 
         {/* Track Tab */}
         {activeTab === "track" && (
-          <div style={{ maxWidth: 700, margin: "0 auto", width: "100%" }}>
-            <div className="swiss-card" style={{ marginBottom: 24 }}>
-              <h3 className="swiss-title" style={{ fontSize: 16, marginBottom: 16, textTransform: "uppercase" }}>Trace Package Route</h3>
-              <form onSubmit={handleTrackPackage} style={{ display: "flex", gap: 12 }}>
-                <input type="text" placeholder="ENTER TRACKING ID (E.G. LK-KTM-PKR-001)" className="swiss-input" style={{ flexGrow: 1 }} value={trackId} onChange={(e) => setTrackId(e.target.value)} />
-                <button type="submit" className="swiss-btn" style={{ padding: "0 24px" }}>Search</button>
-              </form>
-            </div>
-
-            {trackedPackage ? (
-              <div className="swiss-card">
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", paddingBottom: 12, marginBottom: 20 }}>
-                  <div>
-                    <h4 className="swiss-title" style={{ fontSize: 18 }}>{trackedPackage.trackingNumber}</h4>
-                    <p style={{ fontSize: 12, color: "var(--badge-text)" }}>Destination: {branchName(trackedPackage.destinationBranchId)}</p>
-                  </div>
-                  <span className="swiss-badge active" style={{ height: "fit-content" }}>{statusLabel(trackedPackage.status)}</span>
-                </div>
-
-                <div style={{ display: "flex", gap: 24, marginBottom: 20, flexWrap: "wrap" }}>
-                  <div>
-                    <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Sender</span>
-                    <span style={{ fontWeight: 700, color: "var(--title-color)" }}>{trackedPackage.senderName}</span>
-                    {trackedPackage.senderAddress && (
-                      <p style={{ fontSize: 11, color: "var(--badge-text)", marginTop: 2 }}>{trackedPackage.senderAddress}</p>
-                    )}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Receiver</span>
-                    <span style={{ fontWeight: 700, color: "var(--title-color)" }}>{trackedPackage.receiverName}</span>
-                    <p style={{ fontSize: 11, color: "var(--badge-text)", marginTop: 2 }}>{trackedPackage.receiverAddress}</p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Weight</span>
-                    <span className="code-text" style={{ color: "var(--title-color)" }}>{trackedPackage.weight} kg</span>
-                  </div>
-                  {trackedPackage.dimensions && (
-                    <div>
-                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Dimensions</span>
-                      <span className="code-text" style={{ color: "var(--title-color)" }}>{trackedPackage.dimensions}</span>
-                    </div>
-                  )}
-                  {trackedPackage.description && (
-                    <div style={{ flexBasis: "100%" }}>
-                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Description</span>
-                      <span style={{ color: "var(--title-color)" }}>{trackedPackage.description}</span>
-                    </div>
-                  )}
-                  {trackedPackage.assignedVendorId && (
-                    <div>
-                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Assigned Carrier</span>
-                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Vendor Carrier"}
-                      </span>
-                    </div>
-                  )}
-                  {trackedPackage.driverName && (
-                    <div>
-                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Driver Info</span>
-                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        {trackedPackage.driverName} {trackedPackage.vehicleNumber ? `(${trackedPackage.vehicleNumber})` : ""}
-                      </span>
-                    </div>
-                  )}
-                  {trackedPackage.receivedBy && (
-                    <div style={{ flexBasis: "100%", borderTop: "1px dashed var(--border-color)", paddingTop: 12, marginTop: 4 }}>
-                      <span style={{ fontSize: 10, color: "var(--success-color)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Proof of Delivery</span>
-                      <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        Received by: {trackedPackage.receivedBy}
-                      </span>
-                      {trackedPackage.deliveryNotes && (
-                        <p style={{ fontSize: 11, color: "var(--badge-text)", marginTop: 2 }}>Notes: {trackedPackage.deliveryNotes}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "32px 0", position: "relative", padding: "10px 5px" }}>
-                  <div style={{ position: "absolute", left: "20px", right: "20px", top: "50%", height: "2px", backgroundColor: "var(--border-color)", transform: "translateY(-50%)", zIndex: 1 }} />
-                  <div style={{
-                    position: "absolute", left: "20px",
-                    width: trackedPackage.status === "booked" ? "0%" : trackedPackage.status === "in_transit" ? "50%" : "100%",
-                    top: "50%", height: "2px", background: "var(--brand-color)", transform: "translateY(-50%)", zIndex: 1, transition: "width 0.4s ease"
-                  }} />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", zIndex: 2, background: "var(--bg-color)", padding: "0 8px" }}>
-                    <div style={{ width: 12, height: 12, background: "var(--brand-color)", outline: "4px solid var(--hover-bg)" }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>{branchCode(trackedPackage.originBranchId)}</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", zIndex: 2, background: "var(--bg-color)", padding: "0 8px" }}>
-                    <div style={{ width: 12, height: 12, background: trackedPackage.status !== "booked" ? "var(--brand-color)" : "var(--border-color)" }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>TRANSIT</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", zIndex: 2, background: "var(--bg-color)", padding: "0 8px" }}>
-                    <div style={{ width: 12, height: 12, background: trackedPackage.status === "delivered" ? "var(--brand-color)" : "var(--border-color)" }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>{branchCode(trackedPackage.destinationBranchId)}</span>
-                  </div>
-                </div>
-
-                <h4 className="swiss-title" style={{ fontSize: 12, marginBottom: 16, textTransform: "uppercase" }}>Transit Milestones</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: 0, paddingLeft: 12 }}>
-                  {trackedMovementLogs.length === 0 ? (
-                    <div style={{ padding: "10px", color: "var(--badge-text)", fontSize: 12 }}>No movement logs available yet.</div>
-                  ) : (
-                    trackedMovementLogs.map((log, index) => (
-                      <div key={log._id} style={{ display: "flex", gap: 16, borderLeft: index < trackedMovementLogs.length - 1 ? "1px solid var(--border-color)" : "none", paddingLeft: 20, paddingBottom: 24, position: "relative" }}>
-                        <div style={{ position: "absolute", left: index < trackedMovementLogs.length - 1 ? -5 : -4, top: 4, width: 9, height: 9, background: "var(--brand-color)", borderRadius: "50%" }} />
-                        <div>
-                          <span className="code-text" style={{ fontSize: 10, color: "var(--badge-text)" }}>{new Date(log.timestamp).toLocaleString()}</span>
-                          <p style={{ fontWeight: 700, color: "var(--title-color)", textTransform: "capitalize" }}>{log.status.replace(/_/g, " ")}</p>
-                          <p style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 2 }}>Location: {branchName(log.locationBranchId)}</p>
-                          <p style={{ fontSize: 12, color: "var(--title-color)", marginTop: 4 }}>{log.details}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="swiss-card" style={{ padding: 32, textAlign: "center", color: "var(--badge-text)" }}>
-                Enter a tracking ID to view shipment milestones.
-              </div>
-            )}
-          </div>
+          <Track
+            trackId={trackId}
+            setTrackId={setTrackId}
+            handleTrackPackage={handleTrackPackage}
+            trackedPackage={trackedPackage}
+            trackedMovementLogs={trackedMovementLogs}
+            dbVendors={dbVendors}
+            branchName={branchName}
+            branchCode={branchCode}
+            statusLabel={statusLabel}
+          />
         )}
 
         {/* Pickup Requests Tab */}
@@ -2023,122 +1913,22 @@ export default function App() {
 
         {/* Inventory Tab */}
         {activeTab === "inventory" && (
-          <div className="swiss-card wireframe-panel">
-            <div className="module-toolbar">
-              <input type="text" placeholder="Search products..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button className="swiss-btn" onClick={() => { resetProductForm(); setModalOpen("inventory"); }}>+ Add Product</button>
-            </div>
-
-            {/* Low stock alert */}
-            {notifyLowStock && lowStockItems.length > 0 && (
-              <div style={{ background: "var(--brand-glow-hover)", border: "1px solid var(--brand-color)", padding: "10px 16px", marginBottom: 16, fontSize: 12, color: "var(--brand-color)", fontWeight: 700 }}>
-                ⚠ {lowStockItems.length} item(s) are below low-stock threshold
-              </div>
-            )}
-
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Product Name</th>
-                    <th>SKU</th>
-                    <th>Category</th>
-                    <th>Supplier</th>
-                    <th>Quantity</th>
-                    <th>Alert Level</th>
-                    <th>Price (NPR)</th>
-                    <th>Adjust</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbInventory
-                    .filter((item) => item.productName.toLowerCase().includes(searchQuery.toLowerCase()) || item.sku.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .map((item) => {
-                      const isLow = item.quantity <= item.lowStockAlert;
-                      const vendor = dbVendors.find((v) => v._id === item.vendorId);
-                      return (
-                        <tr key={item._id} style={isLow ? { background: "var(--brand-glow-hover)" } : {}}>
-                          <td style={{ fontWeight: 700, color: isLow ? "var(--brand-color)" : "var(--title-color)" }}>{item.productName}</td>
-                          <td className="code-text">{item.sku}</td>
-                          <td>{item.category}</td>
-                          <td>{vendor?.name || "—"}</td>
-                          <td className="code-text" style={{ fontWeight: 800, color: isLow ? "var(--brand-color)" : "var(--title-color)" }}>{item.quantity}</td>
-                          <td className="code-text">{item.lowStockAlert}</td>
-                          <td className="code-text">{item.price.toFixed(2)}</td>
-                          <td style={{ display: "flex", gap: 4 }}>
-                            <button
-                              className="secondary-btn"
-                              style={{ padding: "2px 8px", fontSize: 12, fontWeight: 800 }}
-                              onClick={() => updateStock({ 
-                                productId: item._id, 
-                                newQuantity: Math.max(0, item.quantity - 1),
-                                type: "adjustment",
-                                quantityChanged: -1,
-                                notes: "Quick inline adjustment",
-                                updatedById: loggedInDbUser!._id
-                              })}
-                            >−</button>
-                            <button
-                              className="secondary-btn"
-                              style={{ padding: "2px 8px", fontSize: 12, fontWeight: 800 }}
-                              onClick={() => updateStock({ 
-                                productId: item._id, 
-                                newQuantity: item.quantity + 1,
-                                type: "adjustment",
-                                quantityChanged: 1,
-                                notes: "Quick inline adjustment",
-                                updatedById: loggedInDbUser!._id
-                              })}
-                            >+</button>
-                            <button
-                              className="swiss-btn"
-                              style={{ padding: "2px 8px", fontSize: 12, background: "var(--brand-blue)" }}
-                              onClick={() => {
-                                setTxProductId(item._id);
-                                setModalOpen("transaction");
-                              }}
-                            >Log Tx</button>
-                            <button
-                              className="secondary-btn"
-                              style={{ padding: "2px 8px", fontSize: 12 }}
-                              onClick={() => {
-                                setTxProductId(item._id);
-                                setModalOpen("history");
-                              }}
-                            >History</button>
-                            <button
-                              className="icon-btn"
-                              title="Edit product"
-                              onClick={() => openEditProduct(item)}
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              className="icon-btn icon-btn-danger"
-                              title="Delete product"
-                              onClick={async () => {
-                                if (confirm(`Delete product ${item.productName}?`)) {
-                                  try {
-                                    await removeProduct({ productId: item._id });
-                                    if (txProductId === item._id) {
-                                      setTxProductId(null);
-                                    }
-                                  } catch (error) {
-                                    alert(error instanceof Error ? error.message : "Could not delete this product.");
-                                  }
-                                }
-                              }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Inventory
+            dbInventory={dbInventory}
+            dbVendors={dbVendors}
+            lowStockItems={lowStockItems}
+            notifyLowStock={notifyLowStock}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            txProductId={txProductId}
+            setTxProductId={setTxProductId}
+            setModalOpen={setModalOpen}
+            loggedInDbUser={loggedInDbUser}
+            openEditProduct={openEditProduct}
+            resetProductForm={resetProductForm}
+            updateStock={updateStock}
+            removeProduct={removeProduct}
+          />
         )}
       </main>
 
