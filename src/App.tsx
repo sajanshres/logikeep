@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, X } from "lucide-react";
+import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
 import NavBtn from "./components/NavBtn";
@@ -10,8 +10,11 @@ import Reports from "./components/Reports";
 import Inventory from "./components/Inventory";
 import UserModal from "./components/UserModal";
 import BranchModal from "./components/BranchModal";
+import PackageModal from "./components/PackageModal";
 import VendorModal from "./components/VendorModal";
 import InventoryModal from "./components/InventoryModal";
+import TransactionModal from "./components/TransactionModal";
+import HistoryModal from "./components/HistoryModal";
 import Track from "./components/Track";
 import UsersTab from "./components/UsersTab";
 import BranchesTab from "./components/BranchesTab";
@@ -1631,130 +1634,48 @@ export default function App() {
 
       {/* Package Modal */}
       {modalOpen === "package" && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingPackageId ? "Edit Package" : "Add New Package"}</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetPackageForm(); setModalOpen(null); }}>✕</button>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              <button type="button" onClick={() => setPackageModalTab(1)} className={`modal-tab-btn ${packageModalTab === 1 ? "active" : ""}`}>1. Sender Information</button>
-              <button type="button" onClick={() => setPackageModalTab(2)} className={`modal-tab-btn ${packageModalTab === 2 ? "active" : ""}`}>2. Receiver Information</button>
-              <button type="button" onClick={() => setPackageModalTab(3)} className={`modal-tab-btn ${packageModalTab === 3 ? "active" : ""}`}>3. Package Information</button>
-            </div>
-            <form onSubmit={handleSavePackage} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {packageModalTab === 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div className="grid-2">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Sender Name</label>
-                      <input type="text" required className="swiss-input" value={senderName} onChange={(e) => setSenderName(e.target.value)} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Sender Phone</label>
-                      <input type="text" required className="swiss-input" value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Sender Address</label>
-                    <input type="text" required className="swiss-input" value={senderAddress} onChange={(e) => setSenderAddress(e.target.value)} />
-                  </div>
-                  <button type="button" className="swiss-btn" style={{ padding: "8px", alignSelf: "flex-end", width: 120 }} onClick={() => setPackageModalTab(2)}>Next →</button>
-                </div>
-              )}
-              {packageModalTab === 2 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div className="grid-2">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Receiver Name</label>
-                      <input type="text" required className="swiss-input" value={receiverName} onChange={(e) => setReceiverName(e.target.value)} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Receiver Phone</label>
-                      <input type="text" required className="swiss-input" value={receiverPhone} onChange={(e) => setReceiverPhone(e.target.value)} />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Receiver Address</label>
-                    <input type="text" required className="swiss-input" value={receiverAddress} onChange={(e) => setReceiverAddress(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <button type="button" className="secondary-btn" onClick={() => setPackageModalTab(1)}>← Back</button>
-                    <button type="button" className="swiss-btn" style={{ padding: "8px 16px" }} onClick={() => setPackageModalTab(3)}>Next →</button>
-                  </div>
-                </div>
-              )}
-              {packageModalTab === 3 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div className="grid-2">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Package Type</label>
-                      <select className="swiss-input" value={packageType} onChange={(e) => setPackageType(e.target.value)}>
-                        <option value="Document">📄 Document</option>
-                        <option value="Electronics">🔌 Electronics</option>
-                        <option value="Books">📚 Books</option>
-                        <option value="Clothing">👕 Clothing</option>
-                      </select>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Weight (kg)</label>
-                      <input type="number" step="0.1" required className="swiss-input" value={packageWeight} onChange={(e) => setPackageWeight(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="grid-3">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Length (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="L" value={packageDimL} onChange={(e) => setPackageDimL(e.target.value)} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Width (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="W" value={packageDimW} onChange={(e) => setPackageDimW(e.target.value)} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Height (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="H" value={packageDimH} onChange={(e) => setPackageDimH(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="grid-2">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Driver Name</label>
-                      <input type="text" className="swiss-input" value={packageDriverName} onChange={(e) => setPackageDriverName(e.target.value)} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vehicle Number</label>
-                      <input type="text" className="swiss-input" value={packageVehicleNumber} onChange={(e) => setPackageVehicleNumber(e.target.value)} />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Assigned Carrier (Vendor)</label>
-                    <select className="swiss-input" value={packageVendorId || ""} onChange={(e) => setPackageVendorId(e.target.value ? e.target.value as Id<"vendors"> : null)}>
-                      <option value="">-- No Carrier Assigned --</option>
-                      {dbVendors.map((v) => (
-                        <option key={v._id} value={v._id}>{v.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Depot</label>
-                    <select className="swiss-input" value={assignBranchIdx} onChange={(e) => setAssignBranchIdx(parseInt(e.target.value))}>
-                      {dbBranches.map((b, i) => (
-                        <option key={b._id} value={i}>{b.name} ({b.code})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Description</label>
-                    <textarea rows={3} required className="swiss-input" style={{ resize: "none" }} value={packageDescription} onChange={(e) => setPackageDescription(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-                    <button type="button" className="secondary-btn" onClick={() => setPackageModalTab(2)}>← Back</button>
-                    <button type="submit" className="swiss-btn">{editingPackageId ? "Save Package" : "Create Package"}</button>
-                  </div>
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
+        <PackageModal
+          editingPackageId={editingPackageId}
+          packageModalTab={packageModalTab}
+          setPackageModalTab={setPackageModalTab}
+          senderName={senderName}
+          setSenderName={setSenderName}
+          senderPhone={senderPhone}
+          setSenderPhone={setSenderPhone}
+          senderAddress={senderAddress}
+          setSenderAddress={setSenderAddress}
+          receiverName={receiverName}
+          setReceiverName={setReceiverName}
+          receiverPhone={receiverPhone}
+          setReceiverPhone={setReceiverPhone}
+          receiverAddress={receiverAddress}
+          setReceiverAddress={setReceiverAddress}
+          packageType={packageType}
+          setPackageType={setPackageType}
+          packageWeight={packageWeight}
+          setPackageWeight={setPackageWeight}
+          packageDimL={packageDimL}
+          setPackageDimL={setPackageDimL}
+          packageDimW={packageDimW}
+          setPackageDimW={setPackageDimW}
+          packageDimH={packageDimH}
+          setPackageDimH={setPackageDimH}
+          packageDescription={packageDescription}
+          setPackageDescription={setPackageDescription}
+          assignBranchIdx={assignBranchIdx}
+          setAssignBranchIdx={setAssignBranchIdx}
+          packageDriverName={packageDriverName}
+          setPackageDriverName={setPackageDriverName}
+          packageVehicleNumber={packageVehicleNumber}
+          setPackageVehicleNumber={setPackageVehicleNumber}
+          packageVendorId={packageVendorId}
+          setPackageVendorId={setPackageVendorId}
+          dbBranches={dbBranches}
+          dbVendors={dbVendors}
+          handleSavePackage={handleSavePackage}
+          resetPackageForm={resetPackageForm}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* Vendor Modal */}
@@ -1806,87 +1727,26 @@ export default function App() {
 
       {/* Transaction Modal */}
       {modalOpen === "transaction" && txProductId && (
-        <div className="modal-overlay" onClick={() => setModalOpen(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, color: "var(--title-color)", margin: 0, fontWeight: 700, letterSpacing: "-0.02em" }}>Log Transaction</h3>
-              <button className="icon-btn" onClick={() => setModalOpen(null)}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleTransactionSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Transaction Type</label>
-                <select className="swiss-input" value={txType} onChange={(e) => setTxType(e.target.value as "purchase" | "sale" | "adjustment")}>
-                  <option value="purchase">Purchase (Add Stock)</option>
-                  <option value="sale">Sale / Dispatch (Remove Stock)</option>
-                  <option value="adjustment">Manual Adjustment</option>
-                </select>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Quantity</label>
-                <input type="number" required className="swiss-input" value={txQuantity} onChange={(e) => setTxQuantity(e.target.value)} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Notes / Reference</label>
-                <input type="text" className="swiss-input" value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="e.g. Supplier Invoice #1234" />
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">Save Log</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <TransactionModal
+          txType={txType}
+          setTxType={setTxType}
+          txQuantity={txQuantity}
+          setTxQuantity={setTxQuantity}
+          txNotes={txNotes}
+          setTxNotes={setTxNotes}
+          handleTransactionSubmit={handleTransactionSubmit}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* History Modal */}
       {modalOpen === "history" && txProductId && (
-        <div className="modal-overlay" onClick={() => setModalOpen(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, color: "var(--title-color)", margin: 0, fontWeight: 700, letterSpacing: "-0.02em" }}>Stock Movement History</h3>
-              <button className="icon-btn" onClick={() => setModalOpen(null)}><X size={18} /></button>
-            </div>
-            <div className="table-container">
-              <table className="swiss-table" style={{ width: "100%", textAlign: "left", fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Change</th>
-                    <th>Notes</th>
-                    <th>User</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbMovements.length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>No movements recorded</td></tr>
-                  ) : (
-                    dbMovements.slice().reverse().map(log => {
-                      const user = dbUsers.find(u => u._id === log.updatedById);
-                      return (
-                        <tr key={log._id}>
-                          <td className="code-text" style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                            {new Date(log.timestamp).toLocaleString("en-US", { timeZone: timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                          </td>
-                          <td>
-                            <span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>
-                              {log.type}
-                            </span>
-                          </td>
-                          <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>
-                            {log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}
-                          </td>
-                          <td>{log.notes || "-"}</td>
-                          <td>{user?.name || "Unknown"}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <HistoryModal
+          dbMovements={dbMovements}
+          dbUsers={dbUsers}
+          timezone={timezone}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {logisticsModal && logisticsShipment && (
