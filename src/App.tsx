@@ -8,6 +8,10 @@ import NavBtn from "./components/NavBtn";
 import Dashboard from "./components/Dashboard";
 import Reports from "./components/Reports";
 import Inventory from "./components/Inventory";
+import UserModal from "./components/UserModal";
+import BranchModal from "./components/BranchModal";
+import VendorModal from "./components/VendorModal";
+import InventoryModal from "./components/InventoryModal";
 import Track from "./components/Track";
 import UsersTab from "./components/UsersTab";
 import BranchesTab from "./components/BranchesTab";
@@ -1573,136 +1577,60 @@ export default function App() {
       </main>
 
       {/* MODALS */}
+      {/* old modal markup - moved to components, delete later
+      {modalOpen === "user" && (
+        <div className="modal-overlay"></div>
+      )} */}
 
       {/* User Modal */}
       {modalOpen === "user" && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingUserId ? "Edit User" : "Add New User"}</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetUserForm(); setModalOpen(null); }}>✕</button>
-            </div>
-            <form onSubmit={handleSaveUser} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Full Name</label>
-                  <input type="text" required className="swiss-input" value={newFullName} onChange={(e) => setNewFullName(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Email Address</label>
-                  <input type="email" required className="swiss-input" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
-                </div>
-              </div>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Phone Number</label>
-                  <input type="text" className="swiss-input" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Role</label>
-                  <select className="swiss-input" value={newUserRole} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewUserRole(e.target.value as "admin" | "branch_staff" | "vendor")}>
-                    <option value="branch_staff">Branch Staff</option>
-                    <option value="admin">Admin</option>
-                    <option value="vendor">Vendor</option>
-                  </select>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Assign Branch</label>
-                <select className="swiss-input" value={newUserBranch} onChange={(e) => setNewUserBranch(e.target.value)}>
-                  <option value="">All Branches</option>
-                  {dbBranches.map((b) => (
-                    <option key={b._id} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-              {!editingUserId && (
-                <div className="grid-2">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Password</label>
-                    <input type="password" required className="swiss-input" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Confirm Password</label>
-                    <input type="password" required className="swiss-input" value={newUserConfirmPassword} onChange={(e) => setNewUserConfirmPassword(e.target.value)} />
-                  </div>
-                </div>
-              )}
-              <div className="form-row-inline">
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Status</label>
-                <button
-                  type="button"
-                  className={`status-toggle ${newUserActive ? "on" : ""}`}
-                  onClick={() => setNewUserActive(!newUserActive)}
-                >
-                  <span className="status-toggle-knob" />
-                </button>
-                <span style={{ fontSize: 11, color: "var(--badge-text)" }}>{newUserActive ? "Active" : "Inactive"}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">{editingUserId ? "Save User" : "Create User"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <UserModal
+          editingUserId={editingUserId}
+          newFullName={newFullName}
+          setNewFullName={setNewFullName}
+          newUserEmail={newUserEmail}
+          setNewUserEmail={setNewUserEmail}
+          newUserPhone={newUserPhone}
+          setNewUserPhone={setNewUserPhone}
+          newUserRole={newUserRole}
+          setNewUserRole={setNewUserRole}
+          newUserBranch={newUserBranch}
+          setNewUserBranch={setNewUserBranch}
+          newUserPassword={newUserPassword}
+          setNewUserPassword={setNewUserPassword}
+          newUserConfirmPassword={newUserConfirmPassword}
+          setNewUserConfirmPassword={setNewUserConfirmPassword}
+          newUserActive={newUserActive}
+          setNewUserActive={setNewUserActive}
+          dbBranches={dbBranches}
+          handleSaveUser={handleSaveUser}
+          resetUserForm={resetUserForm}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* Branch Modal */}
       {modalOpen === "branch" && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingBranchId ? "Edit Branch" : "Add New Branch"}</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetBranchForm(); setModalOpen(null); }}>✕</button>
-            </div>
-            <form onSubmit={handleSaveBranch} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Branch Name</label>
-                  <input type="text" required className="swiss-input" value={newBranchName} onChange={(e) => setNewBranchName(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Branch Code</label>
-                  <input type="text" required className="swiss-input" placeholder="e.g. KTM" value={newBranchCode} onChange={(e) => setNewBranchCode(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Address</label>
-                <input type="text" required className="swiss-input" value={newBranchAddress} onChange={(e) => setNewBranchAddress(e.target.value)} />
-              </div>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>City</label>
-                  <input type="text" required className="swiss-input" value={newBranchCity} onChange={(e) => setNewBranchCity(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Contact Number</label>
-                  <input type="text" required className="swiss-input" value={newBranchContact} onChange={(e) => setNewBranchContact(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Email Address</label>
-                <input type="email" className="swiss-input" value={newBranchEmail} onChange={(e) => setNewBranchEmail(e.target.value)} />
-              </div>
-              <div className="form-row-inline">
-                <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Status</label>
-                <button
-                  type="button"
-                  className={`status-toggle ${newBranchActive ? "on" : ""}`}
-                  onClick={() => setNewBranchActive(!newBranchActive)}
-                >
-                  <span className="status-toggle-knob" />
-                </button>
-                <span style={{ fontSize: 11, color: "var(--badge-text)" }}>{newBranchActive ? "Active" : "Inactive"}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">{editingBranchId ? "Save Branch" : "Create Branch"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <BranchModal
+          editingBranchId={editingBranchId}
+          newBranchName={newBranchName}
+          setNewBranchName={setNewBranchName}
+          newBranchCode={newBranchCode}
+          setNewBranchCode={setNewBranchCode}
+          newBranchAddress={newBranchAddress}
+          setNewBranchAddress={setNewBranchAddress}
+          newBranchCity={newBranchCity}
+          setNewBranchCity={setNewBranchCity}
+          newBranchContact={newBranchContact}
+          setNewBranchContact={setNewBranchContact}
+          newBranchEmail={newBranchEmail}
+          setNewBranchEmail={setNewBranchEmail}
+          newBranchActive={newBranchActive}
+          setNewBranchActive={setNewBranchActive}
+          handleSaveBranch={handleSaveBranch}
+          resetBranchForm={resetBranchForm}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* Package Modal */}
@@ -1835,121 +1763,49 @@ export default function App() {
 
       {/* Vendor Modal */}
       {modalOpen === "vendor" && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingVendorId ? "Edit Vendor" : "Add New Vendor"}</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetVendorForm(); setModalOpen(null); }}>✕</button>
-            </div>
-            <form onSubmit={handleSaveVendor} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor Name</label>
-                  <input type="text" required className="swiss-input" value={newVendorName} onChange={(e) => setNewVendorName(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor Type</label>
-                  <select className="swiss-input" value={newVendorType} onChange={(e) => setNewVendorType(e.target.value)}>
-                    <option value="Courier">Courier</option>
-                    <option value="Supplier">Supplier</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Email Address</label>
-                  <input type="email" required className="swiss-input" value={newVendorEmail} onChange={(e) => setNewVendorEmail(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Contact Person</label>
-                  <input type="text" required className="swiss-input" value={newVendorContact} onChange={(e) => setNewVendorContact(e.target.value)} />
-                </div>
-              </div>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Contact Number</label>
-                  <input type="text" required className="swiss-input" value={newVendorPhone} onChange={(e) => setNewVendorPhone(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Address</label>
-                  <input type="text" required className="swiss-input" value={newVendorAddress} onChange={(e) => setNewVendorAddress(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>
-                <button type="submit" className="swiss-btn">{editingVendorId ? "Save Vendor" : "Create Vendor"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <VendorModal
+          editingVendorId={editingVendorId}
+          newVendorName={newVendorName}
+          setNewVendorName={setNewVendorName}
+          newVendorType={newVendorType}
+          setNewVendorType={setNewVendorType}
+          newVendorEmail={newVendorEmail}
+          setNewVendorEmail={setNewVendorEmail}
+          newVendorContact={newVendorContact}
+          setNewVendorContact={setNewVendorContact}
+          newVendorPhone={newVendorPhone}
+          setNewVendorPhone={setNewVendorPhone}
+          newVendorAddress={newVendorAddress}
+          setNewVendorAddress={setNewVendorAddress}
+          handleSaveVendor={handleSaveVendor}
+          resetVendorForm={resetVendorForm}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* Inventory Modal */}
       {modalOpen === "inventory" && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="swiss-title" style={{ fontSize: 18 }}>{editingProductId ? "Edit Product" : "Add New Product"}</h2>
-              <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={() => { resetProductForm(); setModalOpen(null); }}>✕</button>
-            </div>
-            <form onSubmit={handleSaveProduct} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Product Name</label>
-                  <input type="text" required className="swiss-input" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>SKU Code</label>
-                  <input type="text" required className="swiss-input" placeholder="e.g. LAB-4X6-100" value={newProductSku} onChange={(e) => setNewProductSku(e.target.value)} />
-                </div>
-              </div>
-              <div className="grid-2">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Category</label>
-                  <select className="swiss-input" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)}>
-                    <option value="Consumables">Consumables</option>
-                    <option value="Packaging">Packaging</option>
-                    <option value="Equipment">Equipment</option>
-                    <option value="Office Supplies">Office Supplies</option>
-                  </select>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Supplier</label>
-                  <select className="swiss-input" value={newProductVendorIdx} onChange={(e) => setNewProductVendorIdx(parseInt(e.target.value))}>
-                    {dbVendors.map((v, i) => (
-                      <option key={v._id} value={i}>{v.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid-3">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>{editingProductId ? "Current Quantity" : "Initial Quantity"}</label>
-                  <input
-                    type="number"
-                    required={!editingProductId}
-                    className="swiss-input"
-                    value={newProductQty}
-                    onChange={(e) => setNewProductQty(e.target.value)}
-                    disabled={!!editingProductId}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Low Stock Alert</label>
-                  <input type="number" required className="swiss-input" value={newProductAlert} onChange={(e) => setNewProductAlert(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Price (NPR)</label>
-                  <input type="number" step="0.01" required className="swiss-input" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-                <button type="button" className="secondary-btn" onClick={() => { resetProductForm(); setModalOpen(null); }}>Cancel</button>
-                <button type="submit" className="swiss-btn">{editingProductId ? "Save Product" : "Create Product"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <InventoryModal
+          editingProductId={editingProductId}
+          newProductName={newProductName}
+          setNewProductName={setNewProductName}
+          newProductCategory={newProductCategory}
+          setNewProductCategory={setNewProductCategory}
+          newProductSku={newProductSku}
+          setNewProductSku={setNewProductSku}
+          newProductQty={newProductQty}
+          setNewProductQty={setNewProductQty}
+          newProductAlert={newProductAlert}
+          setNewProductAlert={setNewProductAlert}
+          newProductPrice={newProductPrice}
+          setNewProductPrice={setNewProductPrice}
+          newProductVendorIdx={newProductVendorIdx}
+          setNewProductVendorIdx={setNewProductVendorIdx}
+          dbVendors={dbVendors}
+          handleSaveProduct={handleSaveProduct}
+          resetProductForm={resetProductForm}
+          setModalOpen={setModalOpen}
+        />
       )}
 
       {/* Transaction Modal */}
