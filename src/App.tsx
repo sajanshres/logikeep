@@ -1577,10 +1577,6 @@ export default function App() {
       </main>
 
       {/* MODALS */}
-      {/* old modal markup - moved to components, delete later
-      {modalOpen === "user" && (
-        <div className="modal-overlay"></div>
-      )} */}
 
       {/* User Modal */}
       {modalOpen === "user" && (
