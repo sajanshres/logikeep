@@ -608,6 +608,17 @@ export default function App() {
   // Add or edit package
   const handleSavePackage = async (e: React.FormEvent) => {
     e.preventDefault();
+    // sender/receiver steps can be skipped so check them here too
+    if (!senderName.trim() || !senderPhone.trim() || !senderAddress.trim()) {
+      alert("Please fill in the sender details");
+      setPackageModalTab(1);
+      return;
+    }
+    if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) {
+      alert("Please fill in the receiver details");
+      setPackageModalTab(2);
+      return;
+    }
     const dimensions = packageDimL && packageDimW && packageDimH
       ? `${packageDimL} x ${packageDimW} x ${packageDimH} cm`
       : undefined;

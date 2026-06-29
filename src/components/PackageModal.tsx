@@ -59,7 +59,7 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Sender Address</label>
                     <input type="text" required className="swiss-input" value={senderAddress} onChange={(e) => setSenderAddress(e.target.value)} />
                   </div>
-                  <button type="button" className="swiss-btn" style={{ padding: "8px", alignSelf: "flex-end", width: 120 }} onClick={() => setPackageModalTab(2)}>Next →</button>
+                  <button type="button" className="swiss-btn" style={{ padding: "8px", alignSelf: "flex-end", width: 120 }} onClick={() => { if (!senderName.trim() || !senderPhone.trim() || !senderAddress.trim()) { alert("Please fill in the sender details"); return; } setPackageModalTab(2); }}>Next →</button>
                 </div>
               )}
               {packageModalTab === 2 && (
@@ -80,7 +80,7 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <button type="button" className="secondary-btn" onClick={() => setPackageModalTab(1)}>← Back</button>
-                    <button type="button" className="swiss-btn" style={{ padding: "8px 16px" }} onClick={() => setPackageModalTab(3)}>Next →</button>
+                    <button type="button" className="swiss-btn" style={{ padding: "8px 16px" }} onClick={() => { if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) { alert("Please fill in the receiver details"); return; } setPackageModalTab(3); }}>Next →</button>
                   </div>
                 </div>
               )}
