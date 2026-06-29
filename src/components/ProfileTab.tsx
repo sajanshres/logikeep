@@ -2,7 +2,7 @@ import type { Doc } from "../../convex/_generated/dataModel";
 
 type ProfileTabProps = {
   role: string;
-  loggedInUser: { name: string; email: string; role: "Admin" | "Branch Staff" | "Vendor"; hub: string; status: "Active" | "Inactive" };
+  loggedInUser: { name: string; email: string; role: "Manager" | "Branch Staff" | "Vendor"; hub: string; status: "Active" | "Inactive" };
   matchedVendor: Doc<"vendors"> | null | undefined;
 };
 

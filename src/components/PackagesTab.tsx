@@ -22,7 +22,7 @@ export default function PackagesTab({ visiblePackages, role, searchQuery, setSea
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
               <input type="text" placeholder="Search packages..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              {role === "Admin" && (
+              {role === "Manager" && (
                 <button className="swiss-btn" onClick={() => { resetPackageForm(); setModalOpen("package"); }}>+ Add New Package</button>
               )}
             </div>
@@ -51,7 +51,7 @@ export default function PackagesTab({ visiblePackages, role, searchQuery, setSea
                         <td>
                           <div className="table-actions" style={{ alignItems: "center", gap: 8 }}>
                             <button type="button" className="icon-btn" title="Track package" onClick={() => openTrackPackage(p.trackingNumber)}><Search size={12} /></button>
-                            {role === "Admin" && (
+                            {role === "Manager" && (
                               <>
                                 <button type="button" className="icon-btn" title="Edit package" onClick={() => openEditPackage(p)}><Pencil size={12} /></button>
                                 <button type="button" className="swiss-btn" style={{ padding: "2px 8px", fontSize: "10px", minWidth: "auto" }} title="Update Status" onClick={() => handleAdminUpdateStatus(p._id)}>Update</button>

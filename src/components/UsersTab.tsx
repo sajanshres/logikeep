@@ -28,7 +28,7 @@ export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, headerS
                 <input type="text" placeholder="Search users..." className="swiss-input module-search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 <select className="swiss-input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                   <option value="All">All Roles</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Manager</option>
                   <option value="branch_staff">Branch Staff</option>
                   <option value="vendor">Vendor</option>
                 </select>

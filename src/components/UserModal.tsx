@@ -47,7 +47,7 @@ export default function UserModal({ editingUserId, newFullName, setNewFullName, 
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Role</label>
                   <select className="swiss-input" value={newUserRole} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewUserRole(e.target.value as "admin" | "branch_staff" | "vendor")}>
                     <option value="branch_staff">Branch Staff</option>
-                    <option value="admin">Admin</option>
+                    <option value="admin">Manager</option>
                     <option value="vendor">Vendor</option>
                   </select>
                 </div>

@@ -38,7 +38,7 @@ export default function Dashboard({
 }: DashboardProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {role === "Admin" ? (
+      {role === "Manager" ? (
         <div className="grid-4">
           <div className="swiss-card">
             <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Total Packages</h4>

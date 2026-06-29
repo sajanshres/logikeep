@@ -90,7 +90,7 @@ function chartPathFromCounts(counts: number[]) {
 interface SessionUser {
   name: string;
   email: string;
-  role: "Admin" | "Branch Staff" | "Vendor";
+  role: "Manager" | "Branch Staff" | "Vendor";
   hub: string;
   status: "Active" | "Inactive";
 }
@@ -302,8 +302,8 @@ export default function App() {
     e.preventDefault();
     const user = authLoginUser;
     if (user && (user.active ?? true) && verifyPassword(loginPassword, user.passwordHash)) {
-      const roleMap: Record<string, "Admin" | "Branch Staff" | "Vendor"> = {
-        admin: "Admin",
+      const roleMap: Record<string, "Manager" | "Branch Staff" | "Vendor"> = {
+        admin: "Manager",
         branch_staff: "Branch Staff",
         vendor: "Vendor",
       };
@@ -854,7 +854,7 @@ export default function App() {
   };
 
   const roleLabel = (r: string) => {
-    const map: Record<string, string> = { admin: "Admin", branch_staff: "Branch Staff", vendor: "Vendor" };
+    const map: Record<string, string> = { admin: "Manager", branch_staff: "Branch Staff", vendor: "Vendor" };
     return map[r] || r;
   };
 
@@ -862,7 +862,7 @@ export default function App() {
     const titles: Record<string, string> = {
       dashboard: "Dashboard",
       users: "User Management",
-      packages: userRole === "Admin" ? "Package Management" : userRole === "Branch Staff" ? "My Packages" : "My Shipments",
+      packages: userRole === "Manager" ? "Package Management" : userRole === "Branch Staff" ? "My Packages" : "My Shipments",
       branches: "Branch Management",
       vendors: "Vendor Management",
       partners: "Vendor Management",
@@ -1102,7 +1102,7 @@ export default function App() {
           packageId: shipment._id,
           status: logisticsStatus,
           currentBranchId,
-          details: logisticsDetails || `Admin manual status update to ${logisticsStatus.replace(/_/g, " ")}`,
+          details: logisticsDetails || `Manager manual status update to ${logisticsStatus.replace(/_/g, " ")}`,
           updatedById: loggedInDbUser._id,
           driverName: logisticsStatus === "in_transit" ? logisticsDriverName || undefined : undefined,
           vehicleNumber: logisticsStatus === "in_transit" ? logisticsVehicleNumber || undefined : undefined,
@@ -1205,7 +1205,7 @@ export default function App() {
         </div>
 
         <nav className="sidebar-nav">
-          {role === "Admin" && (
+          {role === "Manager" && (
             <>
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="users" label="User Management" icon={<Users size={14} />} />

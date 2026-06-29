@@ -113,7 +113,7 @@ export const seedDatabase = mutation({
 
     // add default users
     const adminUserId = await ctx.db.insert("users", {
-      name: "Administrator",
+      name: "Branch Manager",
       email: "admin@logikeep.com.np",
       passwordHash: hashPassword("admin123"),
       role: "admin",
