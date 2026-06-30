@@ -714,6 +714,10 @@ export default function App() {
         price: parseFloat(newProductPrice) || 0,
       });
     } else {
+      if (!loggedInDbUser.branchId) {
+        alert("Your account is not linked to a branch.");
+        return;
+      }
       await createProduct({
         productName: newProductName,
         category: newProductCategory,
@@ -721,6 +725,7 @@ export default function App() {
         quantity: parseInt(newProductQty) || 0,
         lowStockAlert: parseInt(newProductAlert) || 10,
         vendorId: vendor._id,
+        branchId: loggedInDbUser.branchId,
         price: parseFloat(newProductPrice) || 0,
         updatedById: loggedInDbUser._id,
       });
@@ -793,7 +798,7 @@ export default function App() {
         ["In Transit", reportInTransit],
         ["Returned", reportReturned],
         ["Delivery Success Rate", `${reportSuccessRate}%`],
-        ["Total Products", dbInventory.length],
+        ["Total Products", myInventory.length],
         ["Low Stock Items", reportLowStock],
         ["Stock Value", `Rs ${reportStockValue}`],
         ["Active Vendors", dbVendors.length],
@@ -900,7 +905,11 @@ export default function App() {
   const notificationPackages = visiblePackages;
   const vendorPickupPackages = vendorPackages.filter((p) => p.status === "booked");
   const vendorInvoicePackages = vendorPackages.filter((p) => p.status === "delivered");
-  const lowStockItems = notifyLowStock ? dbInventory.filter((item) => item.quantity <= item.lowStockAlert) : [];
+  // branch staff only see their own branch stock
+  const myInventory = loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId
+    ? dbInventory.filter((item) => item.branchId === loggedInDbUser.branchId)
+    : dbInventory;
+  const lowStockItems = notifyLowStock ? myInventory.filter((item) => item.quantity <= item.lowStockAlert) : [];
   const deliveryNotifications = notifyDelivery
     ? notificationPackages
         .filter((p) => p.status === "delivered")
@@ -981,8 +990,8 @@ export default function App() {
   const reportInTransit = dbPackages.filter((p) => p.status === "in_transit" || p.status === "out_for_delivery").length;
   const reportReturned = dbPackages.filter((p) => p.status === "returned").length;
   const reportSuccessRate = dbPackages.length > 0 ? Math.round((reportDelivered / dbPackages.length) * 100) : 0;
-  const reportLowStock = dbInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
-  const reportStockValue = dbInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const reportLowStock = myInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
+  const reportStockValue = myInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
   const toggleUserStatus = async (id: Id<"users">, current: boolean) => {
     await updateUser({ userId: id, active: !current });
@@ -1363,7 +1372,7 @@ export default function App() {
             activeShipments={activeShipments}
             deliveredCount={deliveredCount}
             successRate={successRate}
-            dbInventory={dbInventory}
+            dbInventory={myInventory}
             dbVendors={dbVendors}
             dbBranches={dbBranches}
             lineChartPath={lineChartPath}
@@ -1496,7 +1505,7 @@ export default function App() {
             dbBranches={dbBranches}
             dbVendors={dbVendors}
             dbPackages={dbPackages}
-            dbInventory={dbInventory}
+            dbInventory={myInventory}
             dbUsers={dbUsers}
             dbAllMovements={dbAllMovements}
             filteredReportPackages={filteredReportPackages}
@@ -1572,7 +1581,7 @@ export default function App() {
         {/* Inventory Tab */}
         {activeTab === "inventory" && (
           <Inventory
-            dbInventory={dbInventory}
+            dbInventory={myInventory}
             dbVendors={dbVendors}
             lowStockItems={lowStockItems}
             notifyLowStock={notifyLowStock}

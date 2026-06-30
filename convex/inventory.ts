@@ -17,6 +17,7 @@ export const createProduct = mutation({
     quantity: v.number(),
     lowStockAlert: v.number(),
     vendorId: v.id("vendors"),
+    branchId: v.id("branches"),
     price: v.number(),
     updatedById: v.id("users"),
   },

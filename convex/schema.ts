@@ -86,10 +86,11 @@ export default defineSchema({
     quantity: v.number(),
     lowStockAlert: v.number(),
     vendorId: v.id("vendors"), // supplier who provides it
+    branchId: v.id("branches"), // which branch this stock belongs to
     price: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_sku", ["sku"]),
+  }).index("by_sku", ["sku"]).index("by_branch", ["branchId"]),
 
   // logs of tracking updates
   movementLogs: defineTable({

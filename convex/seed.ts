@@ -160,7 +160,8 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // add inventory supplies for testing
+    // add inventory supplies for testing (split across branches)
+    // Dharan branch stock
     await ctx.db.insert("inventory", {
       productName: "Thermal Labels 4x6",
       category: "Consumables",
@@ -168,19 +169,8 @@ export const seedDatabase = mutation({
       quantity: 50,
       lowStockAlert: 10,
       vendorId: fastCargoId,
+      branchId: dhnId,
       price: 15.0,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    await ctx.db.insert("inventory", {
-      productName: "Logistics Shipping Boxes (Medium)",
-      category: "Packaging",
-      sku: "BOX-MED-050",
-      quantity: 15,
-      lowStockAlert: 20, // Low stock trigger
-      vendorId: nepalCargoId,
-      price: 2.5,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -192,6 +182,7 @@ export const seedDatabase = mutation({
       quantity: 8,
       lowStockAlert: 10, // Low stock trigger
       vendorId: nepalCargoId,
+      branchId: dhnId,
       price: 12.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -204,7 +195,22 @@ export const seedDatabase = mutation({
       quantity: 3,
       lowStockAlert: 5, // Low stock trigger
       vendorId: gorkhaId,
+      branchId: dhnId,
       price: 4.5,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Kathmandu branch stock
+    await ctx.db.insert("inventory", {
+      productName: "Logistics Shipping Boxes (Medium)",
+      category: "Packaging",
+      sku: "BOX-MED-050",
+      quantity: 15,
+      lowStockAlert: 20, // Low stock trigger
+      vendorId: nepalCargoId,
+      branchId: ktmId,
+      price: 2.5,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -216,7 +222,34 @@ export const seedDatabase = mutation({
       quantity: 4,
       lowStockAlert: 1,
       vendorId: gorkhaId,
+      branchId: ktmId,
       price: 85.0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("inventory", {
+      productName: "Packing Tape Rolls",
+      category: "Packaging",
+      sku: "PKG-TAPE-48",
+      quantity: 6,
+      lowStockAlert: 12, // Low stock trigger
+      vendorId: fastCargoId,
+      branchId: ktmId,
+      price: 1.8,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("inventory", {
+      productName: "Permanent Markers",
+      category: "Stationery",
+      sku: "ST-MRK-12",
+      quantity: 30,
+      lowStockAlert: 10,
+      vendorId: gorkhaId,
+      branchId: ktmId,
+      price: 0.9,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
