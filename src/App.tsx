@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search } from "lucide-react";
+import { Package, LayoutDashboard, Users, Building2, Handshake, FileText, Settings, LogOut, Bell, Search, Eye, EyeOff } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { verifyPassword } from "./auth";
 import NavBtn from "./components/NavBtn";
@@ -112,6 +112,7 @@ export default function App() {
   // Login form
   const [loginEmail, setLoginEmail] = useState<string>("admin@logikeep.com.np");
   const [loginPassword, setLoginPassword] = useState<string>("admin123");
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
 
   // Active tab
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -1184,13 +1185,19 @@ export default function App() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 12, color: "var(--title-color)", fontWeight: 600 }}>Password</label>
-              <input type="password" required className="swiss-input w-full" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+              <div style={{ position: "relative" }}>
+                <input type={showLoginPassword ? "text" : "password"} required className="swiss-input w-full" style={{ paddingRight: 38 }} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} title={showLoginPassword ? "Hide password" : "Show password"} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--badge-text)", display: "flex", padding: 0 }}>
+                  {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="swiss-btn" style={{ padding: 14, width: "100%", marginTop: 4 }}>Sign In</button>
           </form>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8, borderTop: "1px solid var(--border-color)" }}>
-            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("admin@logikeep.com.np"); setLoginPassword("admin123"); }}>Admin demo</button>
-            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("dharan@logikeep.com.np"); setLoginPassword("dharan123"); }}>Branch staff demo</button>
+            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("admin@logikeep.com.np"); setLoginPassword("admin123"); }}>Manager demo</button>
+            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("dharan@logikeep.com.np"); setLoginPassword("dharan123"); }}>Branch (Dharan)</button>
+            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("ktm@logikeep.com.np"); setLoginPassword("ktm123"); }}>Branch (Kathmandu)</button>
             <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("vendor@logikeep.com.np"); setLoginPassword("vendor123"); }}>Vendor demo</button>
             <button type="button" onClick={() => setDarkMode(!darkMode)} className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }}>
               {darkMode ? "Light mode" : "Dark mode"}
