@@ -96,7 +96,7 @@ export default function Inventory({
                             >+</button>
                             <button
                               className="swiss-btn"
-                              style={{ padding: "2px 8px", fontSize: 12, background: "var(--brand-blue)" }}
+                              style={{ padding: "2px 8px", fontSize: 12 }}
                               onClick={() => {
                                 setTxProductId(item._id);
                                 setModalOpen("transaction");
