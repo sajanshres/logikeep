@@ -162,7 +162,7 @@ export const seedDatabase = mutation({
 
     // add inventory supplies for testing (split across branches)
     // Dharan branch stock
-    await ctx.db.insert("inventory", {
+    const thermalLabelsId = await ctx.db.insert("inventory", {
       productName: "Thermal Labels 4x6",
       category: "Consumables",
       sku: "LAB-4X6-100",
@@ -175,7 +175,7 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
-    await ctx.db.insert("inventory", {
+    const bubbleWrapId = await ctx.db.insert("inventory", {
       productName: "Bubble Wrap Roll 100m",
       category: "Packaging",
       sku: "BUB-WRP-100",
@@ -202,7 +202,7 @@ export const seedDatabase = mutation({
     });
 
     // Kathmandu branch stock
-    await ctx.db.insert("inventory", {
+    const boxesId = await ctx.db.insert("inventory", {
       productName: "Logistics Shipping Boxes (Medium)",
       category: "Packaging",
       sku: "BOX-MED-050",
@@ -228,7 +228,7 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
-    await ctx.db.insert("inventory", {
+    const tapeId = await ctx.db.insert("inventory", {
       productName: "Packing Tape Rolls",
       category: "Packaging",
       sku: "PKG-TAPE-48",
@@ -252,6 +252,49 @@ export const seedDatabase = mutation({
       price: 0.9,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+    });
+
+    // some stock movement history so the ledger isnt empty
+    const day = 24 * 60 * 60 * 1000;
+    await ctx.db.insert("stockMovements", {
+      productId: thermalLabelsId,
+      type: "purchase",
+      quantityChanged: 50,
+      notes: "Restocked thermal labels from supplier",
+      updatedById: adminUserId,
+      timestamp: Date.now() - 5 * day,
+    });
+    await ctx.db.insert("stockMovements", {
+      productId: boxesId,
+      type: "purchase",
+      quantityChanged: 30,
+      notes: "New shipping boxes delivered",
+      updatedById: adminUserId,
+      timestamp: Date.now() - 4 * day,
+    });
+    await ctx.db.insert("stockMovements", {
+      productId: bubbleWrapId,
+      type: "sale",
+      quantityChanged: -4,
+      notes: "Used for fragile package packing",
+      updatedById: adminUserId,
+      timestamp: Date.now() - 3 * day,
+    });
+    await ctx.db.insert("stockMovements", {
+      productId: tapeId,
+      type: "sale",
+      quantityChanged: -6,
+      notes: "Used at packing counter",
+      updatedById: adminUserId,
+      timestamp: Date.now() - 2 * day,
+    });
+    await ctx.db.insert("stockMovements", {
+      productId: boxesId,
+      type: "adjustment",
+      quantityChanged: -2,
+      notes: "Damaged boxes written off",
+      updatedById: adminUserId,
+      timestamp: Date.now() - 1 * day,
     });
 
     // add some package entries
