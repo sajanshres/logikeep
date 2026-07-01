@@ -468,6 +468,9 @@ export const clearDatabase = mutation({
     for (const l of await ctx.db.query("movementLogs").collect()) {
       await ctx.db.delete(l._id);
     }
+    for (const s of await ctx.db.query("stockMovements").collect()) {
+      await ctx.db.delete(s._id);
+    }
     return "Database cleared!";
   },
 });
