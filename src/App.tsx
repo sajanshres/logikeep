@@ -714,6 +714,19 @@ export default function App() {
         vendorId: vendor._id,
         price: parseFloat(newProductPrice) || 0,
       });
+      // if the quantity was changed in the edit form, log it as a stock adjustment
+      const editing = dbInventory.find((p) => p._id === editingProductId);
+      const newQty = parseInt(newProductQty) || 0;
+      if (editing && newQty !== editing.quantity) {
+        await updateStock({
+          productId: editingProductId,
+          newQuantity: newQty,
+          type: "adjustment",
+          quantityChanged: newQty - editing.quantity,
+          notes: "Quantity corrected from edit form",
+          updatedById: loggedInDbUser._id,
+        });
+      }
     } else {
       if (!loggedInDbUser.branchId) {
         alert("Your account is not linked to a branch.");

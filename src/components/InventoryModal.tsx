@@ -61,11 +61,10 @@ export default function InventoryModal({ editingProductId, newProductName, setNe
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>{editingProductId ? "Current Quantity" : "Initial Quantity"}</label>
                   <input
                     type="number"
-                    required={!editingProductId}
+                    required
                     className="swiss-input"
                     value={newProductQty}
                     onChange={(e) => setNewProductQty(e.target.value)}
-                    disabled={!!editingProductId}
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
