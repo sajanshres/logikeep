@@ -1215,7 +1215,6 @@ export default function App() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8, borderTop: "1px solid var(--border-color)" }}>
             <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("admin@logikeep.com.np"); setLoginPassword("admin123"); }}>Manager demo</button>
             <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("dharan@logikeep.com.np"); setLoginPassword("dharan123"); }}>Branch (Dharan)</button>
-            <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("ktm@logikeep.com.np"); setLoginPassword("ktm123"); }}>Branch (Kathmandu)</button>
             <button type="button" className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setLoginEmail("vendor@logikeep.com.np"); setLoginPassword("vendor123"); }}>Vendor demo</button>
             <button type="button" onClick={() => setDarkMode(!darkMode)} className="secondary-btn" style={{ fontSize: 10, padding: "6px 10px" }}>
               {darkMode ? "Light mode" : "Dark mode"}
