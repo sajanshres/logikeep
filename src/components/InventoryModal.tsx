@@ -34,21 +34,21 @@ export default function InventoryModal({ editingProductId, newProductName, setNe
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>SKU Code</label>
-                  <input type="text" required className="swiss-input" placeholder="e.g. LAB-4X6-100" value={newProductSku} onChange={(e) => setNewProductSku(e.target.value)} />
+                  <input type="text" required className="swiss-input" placeholder="e.g. TEX-PASH-001" value={newProductSku} onChange={(e) => setNewProductSku(e.target.value)} />
                 </div>
               </div>
               <div className="grid-2">
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Category</label>
                   <select className="swiss-input" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)}>
-                    <option value="Consumables">Consumables</option>
-                    <option value="Packaging">Packaging</option>
-                    <option value="Equipment">Equipment</option>
-                    <option value="Office Supplies">Office Supplies</option>
+                    <option value="Textiles">Textiles</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Food & Beverage">Food & Beverage</option>
+                    <option value="Handicrafts">Handicrafts</option>
                   </select>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Supplier</label>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor (Owner)</label>
                   <select className="swiss-input" value={newProductVendorIdx} onChange={(e) => setNewProductVendorIdx(parseInt(e.target.value))}>
                     {dbVendors.map((v, i) => (
                       <option key={v._id} value={i}>{v.name}</option>

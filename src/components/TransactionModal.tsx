@@ -34,7 +34,7 @@ export default function TransactionModal({ txType, setTxType, txQuantity, setTxQ
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Notes / Reference</label>
-                <input type="text" className="swiss-input" value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="e.g. Supplier Invoice #1234" />
+                <input type="text" className="swiss-input" value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="e.g. Stock received from client" />
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
                 <button type="button" className="secondary-btn" onClick={() => setModalOpen(null)}>Cancel</button>

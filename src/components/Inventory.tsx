@@ -47,7 +47,7 @@ export default function Inventory({
                     <th>Product Name</th>
                     <th>SKU</th>
                     <th>Category</th>
-                    <th>Supplier</th>
+                    <th>Vendor</th>
                     <th>Quantity</th>
                     <th>Alert Level</th>
                     <th>Price (NPR)</th>

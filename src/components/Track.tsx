@@ -70,9 +70,9 @@ export default function Track({
                   )}
                   {trackedPackage.assignedVendorId && (
                     <div>
-                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Assigned Carrier</span>
+                      <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Vendor (Client)</span>
                       <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Vendor Carrier"}
+                        {dbVendors.find(v => v._id === trackedPackage.assignedVendorId)?.name || "Walk-in Customer"}
                       </span>
                     </div>
                   )}

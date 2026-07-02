@@ -39,7 +39,7 @@ export default function VendorsTab({ dbVendors, searchQuery, setSearchQuery, hea
                     .map((v) => (
                       <tr key={v._id}>
                         <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{v.name}</td>
-                        <td><span className="swiss-badge">{v.partnerType || "Courier"}</span></td>
+                        <td><span className="swiss-badge">{v.partnerType || "Retailer"}</span></td>
                         <td>{v.contactPerson}</td>
                         <td>
                           <button

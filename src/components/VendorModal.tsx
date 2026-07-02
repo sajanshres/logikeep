@@ -33,8 +33,11 @@ export default function VendorModal({ editingVendorId, newVendorName, setNewVend
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor Type</label>
                   <select className="swiss-input" value={newVendorType} onChange={(e) => setNewVendorType(e.target.value)}>
-                    <option value="Courier">Courier</option>
-                    <option value="Supplier">Supplier</option>
+                    <option value="Retailer">Retailer</option>
+                    <option value="Wholesaler">Wholesaler</option>
+                    <option value="Manufacturer">Manufacturer</option>
+                    <option value="Exporter">Exporter</option>
+                    <option value="Distributor">Distributor</option>
                   </select>
                 </div>
               </div>

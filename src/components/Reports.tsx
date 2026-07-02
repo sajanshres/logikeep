@@ -177,7 +177,7 @@ export default function Reports({
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
                   <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Active Vendors</h4>
                   <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbVendors.length}</div>
-                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>Couriers & Suppliers</div>
+                  <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>Client Businesses</div>
                 </div>
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
                   <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Delivered</h4>

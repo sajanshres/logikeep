@@ -22,11 +22,11 @@ export default function ProfileTab({ role, loggedInUser, matchedVendor }: Profil
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13 }}>
-                <div><strong>Vendor Agency Name:</strong> {matchedVendor?.name || "N/A"}</div>
+                <div><strong>Client Name:</strong> {matchedVendor?.name || "N/A"}</div>
                 <div><strong>Contact Representative:</strong> {matchedVendor?.contactPerson || loggedInUser.name}</div>
                 <div><strong>Representative Email:</strong> {loggedInUser.email}</div>
                 <div><strong>Agency Status:</strong> <span className={`swiss-badge ${matchedVendor?.status === "active" ? "active" : ""}`}>{matchedVendor?.status === "active" ? "Active" : "Inactive"}</span></div>
-                <div><strong>Description:</strong> External logistics vendor authorized to execute long-haul transit dispatch and cargo pick-up routes.</div>
+                <div><strong>Description:</strong> Client business whose goods are warehoused and shipped through our logistics network.</div>
               </div>
             )}
           </div>
