@@ -66,48 +66,37 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // add transport vendors
-    const fastCargoId = await ctx.db.insert("vendors", {
-      name: "Fast Cargo Nepal",
+    // add client businesses (vendors = clients whose goods we warehouse and ship)
+    const himalayanHandicraftsId = await ctx.db.insert("vendors", {
+      name: "Himalayan Handicrafts",
       contactPerson: "Sajan Shrestha",
       contactNumber: "9851000001",
       email: "vendor@logikeep.com.np",
       address: "Chabahil, Kathmandu",
-      partnerType: "Courier",
+      partnerType: "Retailer",
       status: "active",
       createdAt: Date.now(),
     });
 
-    const nepalCargoId = await ctx.db.insert("vendors", {
-      name: "Nepal Cargo Services",
+    const gorkhaGarmentsId = await ctx.db.insert("vendors", {
+      name: "Gorkha Garments",
       contactPerson: "Ram Yadav",
       contactNumber: "9841223344",
-      email: "ram@nepalcargo.com.np",
+      email: "ram@gorkhagarments.com.np",
       address: "Birgunj, Parsa",
-      partnerType: "Supplier",
+      partnerType: "Manufacturer",
       status: "active",
       createdAt: Date.now(),
     });
 
-    const gorkhaId = await ctx.db.insert("vendors", {
-      name: "Gorkha Transport Services",
+    const annapurnaOrganicsId = await ctx.db.insert("vendors", {
+      name: "Annapurna Organics",
       contactPerson: "Krishna Thapa",
       contactNumber: "9856033445",
-      email: "krishna@gorkha.com.np",
+      email: "krishna@annapurnaorganics.com.np",
       address: "Milanchowk, Butwal",
-      partnerType: "Logistics Partner",
+      partnerType: "Distributor",
       status: "active",
-      createdAt: Date.now(),
-    });
-
-    await ctx.db.insert("vendors", {
-      name: "Himalayan Delivery",
-      contactPerson: "Pemba Sherpa",
-      contactNumber: "9801122334",
-      email: "pemba@himalayandelivey.com",
-      address: "Boudha, Kathmandu",
-      partnerType: "Local Carrier",
-      status: "inactive",
       createdAt: Date.now(),
     });
 
@@ -160,96 +149,96 @@ export const seedDatabase = mutation({
       createdAt: Date.now(),
     });
 
-    // add inventory supplies for testing (split across branches)
+    // add client goods inventory (split across branches)
     // Dharan branch stock
-    const thermalLabelsId = await ctx.db.insert("inventory", {
-      productName: "Thermal Labels 4x6",
-      category: "Consumables",
-      sku: "LAB-4X6-100",
-      quantity: 50,
+    const pashminaShawlsId = await ctx.db.insert("inventory", {
+      productName: "Pashmina Shawls",
+      category: "Textiles",
+      sku: "TEX-PASH-001",
+      quantity: 12,
       lowStockAlert: 10,
-      vendorId: fastCargoId,
+      vendorId: himalayanHandicraftsId,
       branchId: dhnId,
-      price: 15.0,
+      price: 2500.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    const bubbleWrapId = await ctx.db.insert("inventory", {
-      productName: "Bubble Wrap Roll 100m",
-      category: "Packaging",
-      sku: "BUB-WRP-100",
+    const phoneCasesId = await ctx.db.insert("inventory", {
+      productName: "Denim Jackets",
+      category: "Textiles",
+      sku: "TEX-DENIM-030",
       quantity: 8,
       lowStockAlert: 10, // Low stock trigger
-      vendorId: nepalCargoId,
+      vendorId: gorkhaGarmentsId,
       branchId: dhnId,
-      price: 12.0,
+      price: 2200.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     await ctx.db.insert("inventory", {
-      productName: "Clipboards",
-      category: "Stationery",
-      sku: "ST-CLP-01",
+      productName: "Organic Tea Packs",
+      category: "Food & Beverage",
+      sku: "FB-TEA-010",
       quantity: 3,
       lowStockAlert: 5, // Low stock trigger
-      vendorId: gorkhaId,
+      vendorId: annapurnaOrganicsId,
       branchId: dhnId,
-      price: 4.5,
+      price: 450.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     // Kathmandu branch stock
-    const boxesId = await ctx.db.insert("inventory", {
-      productName: "Logistics Shipping Boxes (Medium)",
-      category: "Packaging",
-      sku: "BOX-MED-050",
-      quantity: 15,
-      lowStockAlert: 20, // Low stock trigger
-      vendorId: nepalCargoId,
-      branchId: ktmId,
-      price: 2.5,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    await ctx.db.insert("inventory", {
-      productName: "Weighing Scale 50kg",
-      category: "Equipment",
-      sku: "EQ-SCALE-50",
-      quantity: 4,
-      lowStockAlert: 1,
-      vendorId: gorkhaId,
-      branchId: ktmId,
-      price: 85.0,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    const tapeId = await ctx.db.insert("inventory", {
-      productName: "Packing Tape Rolls",
-      category: "Packaging",
-      sku: "PKG-TAPE-48",
+    const handmadeCarpetsId = await ctx.db.insert("inventory", {
+      productName: "Handmade Carpets",
+      category: "Textiles",
+      sku: "TEX-CARP-002",
       quantity: 6,
-      lowStockAlert: 12, // Low stock trigger
-      vendorId: fastCargoId,
+      lowStockAlert: 8, // Low stock trigger
+      vendorId: himalayanHandicraftsId,
       branchId: ktmId,
-      price: 1.8,
+      price: 8500.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     await ctx.db.insert("inventory", {
-      productName: "Permanent Markers",
-      category: "Stationery",
-      sku: "ST-MRK-12",
-      quantity: 30,
-      lowStockAlert: 10,
-      vendorId: gorkhaId,
+      productName: "Winter Jackets (Carton)",
+      category: "Textiles",
+      sku: "TEX-WINT-020",
+      quantity: 20,
+      lowStockAlert: 15,
+      vendorId: gorkhaGarmentsId,
       branchId: ktmId,
-      price: 0.9,
+      price: 3500.0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    const rockSaltId = await ctx.db.insert("inventory", {
+      productName: "Himalayan Rock Salt",
+      category: "Food & Beverage",
+      sku: "FB-SALT-005",
+      quantity: 4,
+      lowStockAlert: 10, // Low stock trigger
+      vendorId: annapurnaOrganicsId,
+      branchId: ktmId,
+      price: 280.0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("inventory", {
+      productName: "Cotton Kurtas",
+      category: "Textiles",
+      sku: "TEX-KURT-015",
+      quantity: 35,
+      lowStockAlert: 20,
+      vendorId: gorkhaGarmentsId,
+      branchId: ktmId,
+      price: 1800.0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -257,42 +246,42 @@ export const seedDatabase = mutation({
     // some stock movement history so the ledger isnt empty
     const day = 24 * 60 * 60 * 1000;
     await ctx.db.insert("stockMovements", {
-      productId: thermalLabelsId,
+      productId: pashminaShawlsId,
       type: "purchase",
       quantityChanged: 50,
-      notes: "Restocked thermal labels from supplier",
+      notes: "Stock received from Himalayan Handicrafts",
       updatedById: adminUserId,
       timestamp: Date.now() - 5 * day,
     });
     await ctx.db.insert("stockMovements", {
-      productId: boxesId,
+      productId: handmadeCarpetsId,
       type: "purchase",
       quantityChanged: 30,
-      notes: "New shipping boxes delivered",
+      notes: "Received Gorkha Garments shipment",
       updatedById: adminUserId,
       timestamp: Date.now() - 4 * day,
     });
     await ctx.db.insert("stockMovements", {
-      productId: bubbleWrapId,
+      productId: phoneCasesId,
       type: "sale",
       quantityChanged: -4,
-      notes: "Used for fragile package packing",
+      notes: "Dispatched for delivery to Pokhara",
       updatedById: adminUserId,
       timestamp: Date.now() - 3 * day,
     });
     await ctx.db.insert("stockMovements", {
-      productId: tapeId,
+      productId: rockSaltId,
       type: "sale",
       quantityChanged: -6,
-      notes: "Used at packing counter",
+      notes: "Dispatched for delivery to Dharan",
       updatedById: adminUserId,
       timestamp: Date.now() - 2 * day,
     });
     await ctx.db.insert("stockMovements", {
-      productId: boxesId,
+      productId: handmadeCarpetsId,
       type: "adjustment",
       quantityChanged: -2,
-      notes: "Damaged boxes written off",
+      notes: "Damaged units written off",
       updatedById: adminUserId,
       timestamp: Date.now() - 1 * day,
     });
@@ -334,7 +323,7 @@ export const seedDatabase = mutation({
       originBranchId: ktmId,
       destinationBranchId: dhnId,
       currentBranchId: ktmId,
-      assignedVendorId: fastCargoId,
+      assignedVendorId: himalayanHandicraftsId,
       createdAt: Date.now() - 3600000 * 12, // 12 hours ago
       updatedAt: Date.now() - 3600000 * 6,
     });
@@ -355,7 +344,7 @@ export const seedDatabase = mutation({
       originBranchId: pkrId,
       destinationBranchId: ktmId,
       currentBranchId: ktmId,
-      assignedVendorId: fastCargoId,
+      assignedVendorId: gorkhaGarmentsId,
       createdAt: Date.now() - 3600000 * 24, // 24 hours ago
       updatedAt: Date.now() - 3600000 * 4,
     });
@@ -376,7 +365,7 @@ export const seedDatabase = mutation({
       originBranchId: dhnId,
       destinationBranchId: pkrId,
       currentBranchId: pkrId,
-      assignedVendorId: nepalCargoId,
+      assignedVendorId: gorkhaGarmentsId,
       createdAt: Date.now() - 3600000 * 48, // 48 hours ago
       updatedAt: Date.now() - 3600000 * 10,
     });
@@ -423,7 +412,7 @@ export const seedDatabase = mutation({
       packageId: pkg2Id,
       status: "in_transit",
       locationBranchId: ktmId,
-      details: "Shipment dispatched via Fast Cargo Nepal",
+      details: "Shipment dispatched for client delivery",
       timestamp: Date.now() - 3600000 * 6,
       updatedById: adminUserId,
     });
@@ -440,7 +429,7 @@ export const seedDatabase = mutation({
       packageId: pkg3Id,
       status: "in_transit",
       locationBranchId: pkrId,
-      details: "Shipment dispatched via Fast Cargo Nepal",
+      details: "Shipment dispatched for client delivery",
       timestamp: Date.now() - 3600000 * 18,
       updatedById: adminUserId,
     });
@@ -465,7 +454,7 @@ export const seedDatabase = mutation({
       packageId: pkg4Id,
       status: "in_transit",
       locationBranchId: dhnId,
-      details: "Shipment dispatched via Nepal Cargo Services",
+      details: "Shipment dispatched for client delivery",
       timestamp: Date.now() - 3600000 * 36,
       updatedById: adminUserId,
     });

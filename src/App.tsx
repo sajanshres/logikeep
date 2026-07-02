@@ -168,11 +168,11 @@ export default function App() {
   const [newVendorAddress, setNewVendorAddress] = useState<string>("");
   const [newVendorPhone, setNewVendorPhone] = useState<string>("");
   const [newVendorContact, setNewVendorContact] = useState<string>("");
-  const [newVendorType, setNewVendorType] = useState<string>("Courier");
+  const [newVendorType, setNewVendorType] = useState<string>("Retailer");
 
   // Inventory modal fields
   const [newProductName, setNewProductName] = useState<string>("");
-  const [newProductCategory, setNewProductCategory] = useState<string>("Consumables");
+  const [newProductCategory, setNewProductCategory] = useState<string>("Textiles");
   const [newProductSku, setNewProductSku] = useState<string>("");
   const [newProductQty, setNewProductQty] = useState<string>("0");
   const [newProductAlert, setNewProductAlert] = useState<string>("10");
@@ -355,7 +355,7 @@ export default function App() {
     setNewVendorAddress("");
     setNewVendorPhone("");
     setNewVendorContact("");
-    setNewVendorType("Courier");
+    setNewVendorType("Retailer");
   };
 
   const resetPackageForm = () => {
@@ -381,7 +381,7 @@ export default function App() {
   const resetProductForm = () => {
     setEditingProductId(null);
     setNewProductName("");
-    setNewProductCategory("Consumables");
+    setNewProductCategory("Textiles");
     setNewProductSku("");
     setNewProductQty("0");
     setNewProductAlert("10");
@@ -427,7 +427,7 @@ export default function App() {
     setNewVendorAddress(v.address);
     setNewVendorPhone(v.contactNumber);
     setNewVendorContact(v.contactPerson);
-    setNewVendorType(v.partnerType || "Courier");
+    setNewVendorType(v.partnerType || "Retailer");
     setModalOpen("vendor");
   };
 
@@ -897,7 +897,7 @@ export default function App() {
       incoming: "Incoming",
       outgoing: "Outgoing",
       profile: "Profile",
-      pickup: "Pickup Requests",
+      pickup: "Delivery Requests",
       invoices: "Invoices",
     };
     return titles[tab] || tab;
@@ -1267,7 +1267,7 @@ export default function App() {
             <>
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="packages" label="My Shipments" icon={<Package size={14} />} />
-              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="pickup" label="Pickup Requests" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="pickup" label="Delivery Requests" icon={<FileText size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="track" label="Track Shipment" icon={<Search size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="invoices" label="Invoices" icon={<FileText size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="profile" label="Vendor Profile" icon={<Users size={14} />} />
@@ -1489,14 +1489,15 @@ export default function App() {
           />
         )}
 
-        {/* Pickup Requests Tab */}
+        {/* Delivery Requests Tab */}
         {activeTab === "pickup" && (
           <PickupTab
             vendorPickupPackages={vendorPickupPackages}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            loggedInDbUser={loggedInDbUser}
-            updateStatus={updateStatus}
+            createPackage={createPackage}
+            dbBranches={dbBranches}
+            matchedVendor={matchedVendor}
             branchName={branchName}
             statusLabel={statusLabel}
           />
