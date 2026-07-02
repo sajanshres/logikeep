@@ -8,7 +8,6 @@ type PackagesTabProps = {
   role: string;
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  headerSearch: string;
   setModalOpen: (v: ModalKind) => void;
   openEditPackage: (p: Doc<"packages">) => void;
   openTrackPackage: (trackingNumber: string) => void;
@@ -17,7 +16,7 @@ type PackagesTabProps = {
   statusLabel: (s: string) => string;
 };
 
-export default function PackagesTab({ visiblePackages, role, searchQuery, setSearchQuery, headerSearch, setModalOpen, openEditPackage, openTrackPackage, resetPackageForm, handleAdminUpdateStatus, statusLabel }: PackagesTabProps) {
+export default function PackagesTab({ visiblePackages, role, searchQuery, setSearchQuery, setModalOpen, openEditPackage, openTrackPackage, resetPackageForm, handleAdminUpdateStatus, statusLabel }: PackagesTabProps) {
   return (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
@@ -40,7 +39,7 @@ export default function PackagesTab({ visiblePackages, role, searchQuery, setSea
                 </thead>
                 <tbody>
                   {visiblePackages
-                    .filter((p) => p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) || p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) || p.receiverName.toLowerCase().includes(searchQuery.toLowerCase()) || p.trackingNumber.toLowerCase().includes(headerSearch.toLowerCase()))
+                    .filter((p) => p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) || p.senderName.toLowerCase().includes(searchQuery.toLowerCase()) || p.receiverName.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((p) => (
                       <tr key={p._id}>
                         <td className="code-text" style={{ fontWeight: "bold", color: "var(--brand-color)" }}>{p.trackingNumber}</td>

@@ -23,8 +23,8 @@ export default function TransactionModal({ txType, setTxType, txQuantity, setTxQ
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Transaction Type</label>
                 <select className="swiss-input" value={txType} onChange={(e) => setTxType(e.target.value as "purchase" | "sale" | "adjustment")}>
-                  <option value="purchase">Purchase (Add Stock)</option>
-                  <option value="sale">Sale / Dispatch (Remove Stock)</option>
+                  <option value="purchase">Stock In (Add Stock)</option>
+                  <option value="sale">Stock Out (Dispatch)</option>
                   <option value="adjustment">Manual Adjustment</option>
                 </select>
               </div>

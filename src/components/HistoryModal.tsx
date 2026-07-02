@@ -42,7 +42,7 @@ export default function HistoryModal({ dbMovements, dbUsers, timezone, setModalO
                           </td>
                           <td>
                             <span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>
-                              {log.type}
+                              {log.type === "purchase" ? "stock in" : log.type === "sale" ? "stock out" : log.type}
                             </span>
                           </td>
                           <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>

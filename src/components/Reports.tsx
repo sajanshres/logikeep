@@ -145,7 +145,7 @@ export default function Reports({
                         return (
                           <tr key={log._id}>
                             <td className="code-text" style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(log.timestamp).toLocaleString("en-US", { timeZone: timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
-                            <td><span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>{log.type}</span></td>
+                            <td><span className="badge" style={{ background: log.type === "purchase" ? "var(--success-bg)" : log.type === "sale" ? "var(--error-bg)" : "var(--border-color)", color: "var(--title-color)" }}>{log.type === "purchase" ? "stock in" : log.type === "sale" ? "stock out" : log.type}</span></td>
                             <td className="code-text" style={{ color: log.quantityChanged > 0 ? "var(--success-text)" : "var(--error-text)", fontWeight: 600 }}>{log.quantityChanged > 0 ? "+" : ""}{log.quantityChanged}</td>
                             <td>{log.notes || "-"}</td>
                             <td>{product?.productName || "Unknown"}</td>

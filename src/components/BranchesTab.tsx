@@ -7,7 +7,6 @@ type BranchesTabProps = {
   dbBranches: Doc<"branches">[];
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  headerSearch: string;
   setModalOpen: (v: ModalKind) => void;
   openEditBranch: (b: Doc<"branches">) => void;
   removeBranch: (args: { branchId: Id<"branches"> }) => Promise<unknown>;
@@ -15,7 +14,7 @@ type BranchesTabProps = {
   toggleBranchStatus: (id: Id<"branches">, current: string | undefined) => void;
 };
 
-export default function BranchesTab({ dbBranches, searchQuery, setSearchQuery, headerSearch, setModalOpen, openEditBranch, removeBranch, resetBranchForm, toggleBranchStatus }: BranchesTabProps) {
+export default function BranchesTab({ dbBranches, searchQuery, setSearchQuery, setModalOpen, openEditBranch, removeBranch, resetBranchForm, toggleBranchStatus }: BranchesTabProps) {
   return (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
@@ -35,7 +34,7 @@ export default function BranchesTab({ dbBranches, searchQuery, setSearchQuery, h
                 </thead>
                 <tbody>
                   {dbBranches
-                    .filter((b) => b.name.toLowerCase().includes(searchQuery.toLowerCase()) || b.code.toLowerCase().includes(searchQuery.toLowerCase()) || b.city.toLowerCase().includes(headerSearch.toLowerCase()))
+                    .filter((b) => b.name.toLowerCase().includes(searchQuery.toLowerCase()) || b.code.toLowerCase().includes(searchQuery.toLowerCase()) || b.city.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((b) => (
                       <tr key={b._id}>
                         <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{b.name}</td>

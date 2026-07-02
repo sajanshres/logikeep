@@ -196,7 +196,6 @@ export default function App() {
   const [reportDateTo, setReportDateTo] = useState<string>("");
   const [reportBranch, setReportBranch] = useState<string>("All");
   const [reportPartner, setReportPartner] = useState<string>("All");
-  const [headerSearch, setHeaderSearch] = useState<string>("");
   const [editingUserId, setEditingUserId] = useState<Id<"users"> | null>(null);
   const [editingBranchId, setEditingBranchId] = useState<Id<"branches"> | null>(null);
   const [editingVendorId, setEditingVendorId] = useState<Id<"vendors"> | null>(null);
@@ -802,7 +801,7 @@ export default function App() {
         const user = dbUsers.find(u => u._id === log.updatedById);
         return [
           new Date(log.timestamp).toLocaleString(),
-          log.type,
+          log.type === "purchase" ? "stock in" : log.type === "sale" ? "stock out" : log.type,
           log.quantityChanged,
           `"${log.notes || ""}"`,
           `"${product?.productName || "Unknown"}"`,
@@ -1289,16 +1288,6 @@ export default function App() {
       {/* MAIN */}
       <main>
         <div className="app-topbar">
-          <div className="topbar-search-wrap">
-            <Search size={14} className="topbar-search-icon" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="swiss-input topbar-search"
-              value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
-            />
-          </div>
           <div className="topbar-actions" style={{ position: "relative" }}>
             <button
               type="button"
@@ -1415,7 +1404,6 @@ export default function App() {
             dbUsers={dbUsers}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            headerSearch={headerSearch}
             roleFilter={roleFilter}
             setRoleFilter={setRoleFilter}
             roleLabel={roleLabel}
@@ -1433,7 +1421,6 @@ export default function App() {
             dbBranches={dbBranches}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            headerSearch={headerSearch}
             setModalOpen={setModalOpen}
             openEditBranch={openEditBranch}
             removeBranch={removeBranch}
@@ -1449,7 +1436,6 @@ export default function App() {
             role={role}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            headerSearch={headerSearch}
             setModalOpen={setModalOpen}
             openEditPackage={openEditPackage}
             openTrackPackage={openTrackPackage}
@@ -1465,7 +1451,6 @@ export default function App() {
             dbVendors={dbVendors}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            headerSearch={headerSearch}
             setModalOpen={setModalOpen}
             openEditVendor={openEditVendor}
             removeVendor={removeVendor}

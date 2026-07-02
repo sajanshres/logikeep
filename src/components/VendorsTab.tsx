@@ -7,7 +7,6 @@ type VendorsTabProps = {
   dbVendors: Doc<"vendors">[];
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  headerSearch: string;
   setModalOpen: (v: ModalKind) => void;
   openEditVendor: (v: Doc<"vendors">) => void;
   removeVendor: (args: { vendorId: Id<"vendors"> }) => Promise<unknown>;
@@ -15,7 +14,7 @@ type VendorsTabProps = {
   toggleVendorStatus: (id: Id<"vendors">, current: string) => void;
 };
 
-export default function VendorsTab({ dbVendors, searchQuery, setSearchQuery, headerSearch, setModalOpen, openEditVendor, removeVendor, resetVendorForm, toggleVendorStatus }: VendorsTabProps) {
+export default function VendorsTab({ dbVendors, searchQuery, setSearchQuery, setModalOpen, openEditVendor, removeVendor, resetVendorForm, toggleVendorStatus }: VendorsTabProps) {
   return (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
@@ -35,7 +34,7 @@ export default function VendorsTab({ dbVendors, searchQuery, setSearchQuery, hea
                 </thead>
                 <tbody>
                   {dbVendors
-                    .filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.name.toLowerCase().includes(headerSearch.toLowerCase()))
+                    .filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((v) => (
                       <tr key={v._id}>
                         <td style={{ fontWeight: 700, color: "var(--title-color)" }}>{v.name}</td>

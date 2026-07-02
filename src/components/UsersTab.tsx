@@ -9,7 +9,6 @@ type UsersTabProps = {
   dbUsers: UserRow[];
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  headerSearch: string;
   roleFilter: string;
   setRoleFilter: (v: string) => void;
   roleLabel: (r: string) => string;
@@ -20,7 +19,7 @@ type UsersTabProps = {
   toggleUserStatus: (id: Id<"users">, current: boolean) => void;
 };
 
-export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, headerSearch, roleFilter, setRoleFilter, roleLabel, setModalOpen, openEditUser, removeUser, resetUserForm, toggleUserStatus }: UsersTabProps) {
+export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, roleFilter, setRoleFilter, roleLabel, setModalOpen, openEditUser, removeUser, resetUserForm, toggleUserStatus }: UsersTabProps) {
   return (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
@@ -48,7 +47,7 @@ export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, headerS
                 </thead>
                 <tbody>
                   {dbUsers
-                    .filter((u) => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()) || u.name.toLowerCase().includes(headerSearch.toLowerCase()))
+                    .filter((u) => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()))
                     .filter((u) => roleFilter === "All" || u.role === roleFilter)
                     .map((u) => {
                       const isActive = u.active ?? true;
