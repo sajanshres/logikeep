@@ -549,6 +549,10 @@ export default function App() {
     e.preventDefault();
     const branch = dbBranches.find((b) => b.name === newUserBranch);
     if (editingUserId) {
+      if (newUserPassword && newUserPassword !== newUserConfirmPassword) {
+        alert("Passwords do not match!");
+        return;
+      }
       await updateUser({
         userId: editingUserId,
         name: newFullName,
@@ -557,6 +561,7 @@ export default function App() {
         branchId: branch?._id,
         phone: newUserPhone || undefined,
         active: newUserActive,
+        passwordHash: newUserPassword || undefined,
       });
     } else {
       if (newUserPassword !== newUserConfirmPassword) {

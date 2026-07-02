@@ -61,18 +61,16 @@ export default function UserModal({ editingUserId, newFullName, setNewFullName, 
                   ))}
                 </select>
               </div>
-              {!editingUserId && (
-                <div className="grid-2">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Password</label>
-                    <input type="password" required className="swiss-input" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Confirm Password</label>
-                    <input type="password" required className="swiss-input" value={newUserConfirmPassword} onChange={(e) => setNewUserConfirmPassword(e.target.value)} />
-                  </div>
+              <div className="grid-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>{editingUserId ? "New Password" : "Password"}</label>
+                  <input type="password" required={!editingUserId} placeholder={editingUserId ? "Leave blank to keep current" : ""} className="swiss-input" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
                 </div>
-              )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Confirm Password</label>
+                  <input type="password" required={!editingUserId} placeholder={editingUserId ? "Leave blank to keep current" : ""} className="swiss-input" value={newUserConfirmPassword} onChange={(e) => setNewUserConfirmPassword(e.target.value)} />
+                </div>
+              </div>
               <div className="form-row-inline">
                 <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Status</label>
                 <button
