@@ -80,7 +80,7 @@ export default function Track({
                     <div>
                       <span style={{ fontSize: 10, color: "var(--badge-text)", textTransform: "uppercase", display: "block", fontWeight: 700, marginBottom: 2 }}>Driver Info</span>
                       <span style={{ fontWeight: 700, color: "var(--title-color)" }}>
-                        {trackedPackage.driverName} {trackedPackage.vehicleNumber ? `(${trackedPackage.vehicleNumber})` : ""}
+                        {trackedPackage.driverName}{trackedPackage.driverPhone ? ` · ${trackedPackage.driverPhone}` : ""}{trackedPackage.vehicleNumber ? ` (${trackedPackage.vehicleNumber})` : ""}
                       </span>
                     </div>
                   )}

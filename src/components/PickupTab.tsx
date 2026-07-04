@@ -20,16 +20,19 @@ type PickupTabProps = {
     destinationBranchId: Id<"branches">;
     currentBranchId: Id<"branches">;
     assignedVendorId?: Id<"vendors">;
+    inventoryItemId?: Id<"inventory">;
+    itemQuantity?: number;
     driverName?: string;
     vehicleNumber?: string;
   }) => Promise<unknown>;
   dbBranches: Doc<"branches">[];
+  dbInventory: Doc<"inventory">[];
   matchedVendor: Doc<"vendors"> | null | undefined;
   branchName: (id: string | undefined) => string;
   statusLabel: (s: string) => string;
 };
 
-export default function PickupTab({ vendorPickupPackages, searchQuery, setSearchQuery, createPackage, dbBranches, matchedVendor, branchName, statusLabel }: PickupTabProps) {
+export default function PickupTab({ vendorPickupPackages, searchQuery, setSearchQuery, createPackage, dbBranches, dbInventory, matchedVendor, branchName, statusLabel }: PickupTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [receiverName, setReceiverName] = useState("");
   const [receiverPhone, setReceiverPhone] = useState("");
@@ -39,6 +42,8 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
   const [pkgType, setPkgType] = useState("Document");
   const [weight, setWeight] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState<string>("");
+  const [itemQty, setItemQty] = useState<string>("");
 
   const resetForm = () => {
     setReceiverName("");
@@ -49,12 +54,26 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
     setPkgType("Document");
     setWeight("");
     setDescription("");
+    setSelectedItemId("");
+    setItemQty("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dbBranches.length || !matchedVendor) return;
     if (fromBranchIdx === destBranchIdx) { alert("Pickup and destination branch cannot be the same"); return; }
+    if (selectedItemId && (!itemQty || parseInt(itemQty, 10) < 1)) {
+      alert("Please enter a valid quantity for the selected item.");
+      return;
+    }
+    const vendorItems = matchedVendor ? dbInventory.filter(item => item.vendorId === matchedVendor._id) : [];
+    if (selectedItemId) {
+      const item = vendorItems.find(i => i._id === selectedItemId);
+      if (item && (parseInt(itemQty, 10) || 0) > item.quantity) {
+        alert(`Insufficient stock for ${item.productName}. Available: ${item.quantity}.`);
+        return;
+      }
+    }
     const originBranch = dbBranches[fromBranchIdx] || dbBranches[0];
     const destBranch = dbBranches[destBranchIdx] || dbBranches[0];
     await createPackage({
@@ -71,6 +90,8 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
       destinationBranchId: destBranch._id,
       currentBranchId: originBranch._id,
       assignedVendorId: matchedVendor._id,
+      inventoryItemId: (selectedItemId ? selectedItemId as Id<"inventory"> : undefined),
+      itemQuantity: selectedItemId ? (parseInt(itemQty, 10) || 1) : undefined,
     });
     resetForm();
     setShowForm(false);
@@ -138,6 +159,32 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
             <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Description</label>
             <textarea rows={2} required className="swiss-input" style={{ resize: "none" }} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
+          {matchedVendor && (() => {
+            const vendorItems = dbInventory.filter(item => item.vendorId === matchedVendor._id);
+            return vendorItems.length > 0 ? (
+              <div className="grid-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Item from Inventory (optional)</label>
+                  <select className="swiss-input" value={selectedItemId} onChange={(e) => {
+                    setSelectedItemId(e.target.value);
+                    if (!description.trim() && e.target.value) {
+                      const item = vendorItems.find(i => i._id === e.target.value);
+                      if (item) setDescription(`${itemQty || "1"}× ${item.productName}`);
+                    }
+                  }}>
+                    <option value="">— None —</option>
+                    {vendorItems.map(item => (
+                      <option key={item._id} value={item._id}>{item.productName} (stock: {item.quantity})</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Quantity</label>
+                  <input type="number" min="1" className="swiss-input" value={itemQty} onChange={(e) => setItemQty(e.target.value)} placeholder="0" />
+                </div>
+              </div>
+            ) : null;
+          })()}
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button type="submit" className="swiss-btn">Submit Delivery Request</button>
           </div>

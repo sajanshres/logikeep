@@ -28,6 +28,7 @@ export default function CargoTab({ activeTab, dbPackages, loggedInDbUser, handle
                     <th>Receiver</th>
                     <th>Status</th>
                     <th>Weight</th>
+                    <th>Driver</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -52,6 +53,11 @@ export default function CargoTab({ activeTab, dbPackages, loggedInDbUser, handle
                         <td>{p.receiverName}</td>
                         <td><span className="swiss-badge">{statusLabel(p.status)}</span></td>
                         <td className="code-text">{p.weight} kg</td>
+                        <td style={{ fontSize: 12 }}>
+                          {p.driverName ? (
+                            <span>{p.driverName}{p.driverPhone ? ` · ${p.driverPhone}` : ""}</span>
+                          ) : "—"}
+                        </td>
                         <td style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                           {activeTab === "incoming" && p.status === "in_transit" && (
                             <button className="swiss-btn" style={{ padding: "4px 8px", fontSize: "11px", minWidth: "auto" }} onClick={() => handleMarkArrived(p._id)}>Mark Arrived</button>

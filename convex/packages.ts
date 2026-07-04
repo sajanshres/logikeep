@@ -36,8 +36,11 @@ export const create = mutation({
     destinationBranchId: v.id("branches"),
     currentBranchId: v.id("branches"),
     assignedVendorId: v.optional(v.id("vendors")),
+    inventoryItemId: v.optional(v.id("inventory")),
+    itemQuantity: v.optional(v.number()),
     driverName: v.optional(v.string()),
     vehicleNumber: v.optional(v.string()),
+    driverPhone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const origin = await ctx.db.get(args.originBranchId);
@@ -49,6 +52,35 @@ export const create = mutation({
     const existing = await ctx.db.query("packages").collect();
     const trackingNumber = `LK-${origin.code}-${dest.code}-${String(existing.length + 1).padStart(3, "0")}`;
 
+    const operator = await ctx.db.query("users").first();
+    if (!operator) {
+      throw new Error("Seed the database before booking packages.");
+    }
+
+    // auto-decrement stock if inventory item is linked
+    if (args.inventoryItemId && args.itemQuantity) {
+      const item = await ctx.db.get(args.inventoryItemId);
+      if (!item) throw new Error("Inventory item not found.");
+      if (args.itemQuantity <= 0) {
+        throw new Error("Item quantity must be greater than zero.");
+      }
+      if (item.quantity < args.itemQuantity) {
+        throw new Error(`Insufficient stock for ${item.productName}. Available: ${item.quantity}, requested: ${args.itemQuantity}.`);
+      }
+      await ctx.db.patch(args.inventoryItemId, {
+        quantity: item.quantity - args.itemQuantity,
+        updatedAt: Date.now(),
+      });
+      await ctx.db.insert("stockMovements", {
+        productId: args.inventoryItemId,
+        type: "sale",
+        quantityChanged: -args.itemQuantity,
+        notes: `Reserved for delivery ${trackingNumber}`,
+        updatedById: operator._id,
+        timestamp: Date.now(),
+      });
+    }
+
     const packageId = await ctx.db.insert("packages", {
       ...args,
       trackingNumber,
@@ -56,11 +88,6 @@ export const create = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
-
-    const operator = await ctx.db.query("users").first();
-    if (!operator) {
-      throw new Error("Seed the database before booking packages.");
-    }
 
     await ctx.db.insert("movementLogs", {
       packageId,
@@ -92,6 +119,7 @@ export const update = mutation({
     assignedVendorId: v.optional(v.id("vendors")),
     driverName: v.optional(v.string()),
     vehicleNumber: v.optional(v.string()),
+    driverPhone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { packageId, ...fields } = args;
@@ -120,6 +148,7 @@ export const updateStatus = mutation({
     updatedById: v.id("users"),
     driverName: v.optional(v.string()),
     vehicleNumber: v.optional(v.string()),
+    driverPhone: v.optional(v.string()),
     receivedBy: v.optional(v.string()),
     deliveryNotes: v.optional(v.string()),
   },

@@ -57,6 +57,9 @@ export default defineSchema({
     assignedVendorId: v.optional(v.id("vendors")), // vendor handling this package
     driverName: v.optional(v.string()),
     vehicleNumber: v.optional(v.string()),
+    driverPhone: v.optional(v.string()),
+    inventoryItemId: v.optional(v.id("inventory")),
+    itemQuantity: v.optional(v.number()),
     receivedBy: v.optional(v.string()),
     deliveryNotes: v.optional(v.string()),
     createdAt: v.number(),

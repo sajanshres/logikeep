@@ -40,7 +40,7 @@ type AppSettings = {
 };
 
 type ShipmentStatus = "booked" | "in_transit" | "arrived_at_branch" | "out_for_delivery" | "delivered" | "returned";
-type LogisticsAction = "dispatch" | "deliver" | "statusUpdate" | "return" | "forward";
+type LogisticsAction = "dispatch" | "deliver" | "statusUpdate" | "return" | "forward" | "outForDelivery";
 
 interface LogisticsModalState {
   action: LogisticsAction;
@@ -55,6 +55,7 @@ interface LogisticsUpdatePayload {
   updatedById: Id<"users">;
   driverName?: string;
   vehicleNumber?: string;
+  driverPhone?: string;
   receivedBy?: string;
   deliveryNotes?: string;
 }
@@ -161,6 +162,8 @@ export default function App() {
   const [packageDriverName, setPackageDriverName] = useState<string>("");
   const [packageVehicleNumber, setPackageVehicleNumber] = useState<string>("");
   const [packageVendorId, setPackageVendorId] = useState<Id<"vendors"> | null>(null);
+  const [packageItemId, setPackageItemId] = useState<Id<"inventory"> | null>(null);
+  const [packageItemQty, setPackageItemQty] = useState<string>("");
 
   // Vendor modal fields
   const [newVendorName, setNewVendorName] = useState<string>("");
@@ -219,6 +222,7 @@ export default function App() {
   const [logisticsBranchId, setLogisticsBranchId] = useState<string>("");
   const [logisticsDriverName, setLogisticsDriverName] = useState<string>("");
   const [logisticsVehicleNumber, setLogisticsVehicleNumber] = useState<string>("");
+  const [logisticsDriverPhone, setLogisticsDriverPhone] = useState<string>("");
   const [logisticsReceivedBy, setLogisticsReceivedBy] = useState<string>("");
   const [logisticsDeliveryNotes, setLogisticsDeliveryNotes] = useState<string>("");
   const [logisticsDetails, setLogisticsDetails] = useState<string>("");
@@ -374,6 +378,8 @@ export default function App() {
     setPackageDriverName("");
     setPackageVehicleNumber("");
     setPackageVendorId(null);
+    setPackageItemId(null);
+    setPackageItemQty("");
     setPackageModalTab(1);
   };
 
@@ -448,6 +454,8 @@ export default function App() {
     setPackageDriverName(p.driverName || "");
     setPackageVehicleNumber(p.vehicleNumber || "");
     setPackageVendorId(p.assignedVendorId || null);
+    setPackageItemId(p.inventoryItemId || null);
+    setPackageItemQty(p.itemQuantity ? String(p.itemQuantity) : "");
     setPackageModalTab(1);
     setModalOpen("package");
   };
@@ -471,6 +479,7 @@ export default function App() {
     setLogisticsBranchId("");
     setLogisticsDriverName("");
     setLogisticsVehicleNumber("");
+    setLogisticsDriverPhone("");
     setLogisticsReceivedBy("");
     setLogisticsDeliveryNotes("");
     setLogisticsDetails("");
@@ -487,13 +496,16 @@ export default function App() {
           ? "in_transit"
           : action === "dispatch"
             ? "in_transit"
-            : shipment?.status as ShipmentStatus || "booked";
+            : action === "outForDelivery"
+              ? "out_for_delivery"
+              : shipment?.status as ShipmentStatus || "booked";
 
     setLogisticsModal({ action, packageId });
     setLogisticsStatus(initialStatus);
     setLogisticsBranchId(action === "forward" ? "" : shipment ? String(shipment.currentBranchId) : branchId);
     setLogisticsDriverName(shipment?.driverName || "");
     setLogisticsVehicleNumber(shipment?.vehicleNumber || "");
+    setLogisticsDriverPhone(shipment?.driverPhone || "");
     setLogisticsReceivedBy(shipment?.receivedBy || "");
     setLogisticsDeliveryNotes(shipment?.deliveryNotes || "");
     setLogisticsDetails("");
@@ -646,6 +658,10 @@ export default function App() {
       });
     } else {
       if (dbBranches.length < 1) return;
+      if (packageItemId && (!packageItemQty || parseInt(packageItemQty, 10) < 1)) {
+        alert("Please enter a valid quantity for the selected item.");
+        return;
+      }
       const destBranch = dbBranches[assignBranchIdx] || dbBranches[0];
       const originBranch = dbBranches[0];
       await createPackage({
@@ -662,6 +678,8 @@ export default function App() {
         driverName: packageDriverName || undefined,
         vehicleNumber: packageVehicleNumber || undefined,
         assignedVendorId: packageVendorId || undefined,
+        inventoryItemId: packageItemId || undefined,
+        itemQuantity: packageItemId ? (parseInt(packageItemQty, 10) || 1) : undefined,
         originBranchId: originBranch._id,
         destinationBranchId: destBranch._id,
         currentBranchId: originBranch._id,
@@ -1035,9 +1053,8 @@ export default function App() {
     openLogisticsModal("dispatch", packageId);
   };
 
-  const handleOutForDelivery = async (packageId: Id<"packages">) => {
-    if (!loggedInDbUser?.branchId) return;
-    await updateStatus({ packageId, status: "out_for_delivery", currentBranchId: loggedInDbUser.branchId, details: "Out for local delivery", updatedById: loggedInDbUser._id });
+  const handleOutForDelivery = (packageId: Id<"packages">) => {
+    openLogisticsModal("outForDelivery", packageId);
   };
 
   const handleDeliver = (packageId: Id<"packages">) => {
@@ -1089,6 +1106,19 @@ export default function App() {
           updatedById: loggedInDbUser._id,
           driverName: logisticsDriverName || undefined,
           vehicleNumber: logisticsVehicleNumber || undefined,
+          driverPhone: logisticsDriverPhone || undefined,
+        });
+        break;
+      case "outForDelivery":
+        await update({
+          packageId: shipment._id,
+          status: "out_for_delivery",
+          currentBranchId,
+          details: logisticsDetails || `Out for delivery with driver ${logisticsDriverName || "N/A"}${logisticsVehicleNumber ? ` (Vehicle: ${logisticsVehicleNumber})` : ""}`,
+          updatedById: loggedInDbUser._id,
+          driverName: logisticsDriverName || undefined,
+          vehicleNumber: logisticsVehicleNumber || undefined,
+          driverPhone: logisticsDriverPhone || undefined,
         });
         break;
       case "deliver":
@@ -1133,6 +1163,7 @@ export default function App() {
           updatedById: loggedInDbUser._id,
           driverName: logisticsStatus === "in_transit" ? logisticsDriverName || undefined : undefined,
           vehicleNumber: logisticsStatus === "in_transit" ? logisticsVehicleNumber || undefined : undefined,
+          driverPhone: logisticsStatus === "in_transit" ? logisticsDriverPhone || undefined : undefined,
           receivedBy: logisticsStatus === "delivered" ? logisticsReceivedBy || undefined : undefined,
           deliveryNotes: logisticsStatus === "delivered" ? logisticsDeliveryNotes || undefined : undefined,
         });
@@ -1164,6 +1195,7 @@ export default function App() {
           updatedById: loggedInDbUser._id,
           driverName: logisticsDriverName || undefined,
           vehicleNumber: logisticsVehicleNumber || undefined,
+          driverPhone: logisticsDriverPhone || undefined,
         });
         break;
     }
@@ -1482,6 +1514,7 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             createPackage={createPackage}
             dbBranches={dbBranches}
+            dbInventory={dbInventory}
             matchedVendor={matchedVendor}
             branchName={branchName}
             statusLabel={statusLabel}
@@ -1700,8 +1733,13 @@ export default function App() {
           setPackageVehicleNumber={setPackageVehicleNumber}
           packageVendorId={packageVendorId}
           setPackageVendorId={setPackageVendorId}
+          packageItemId={packageItemId}
+          setPackageItemId={setPackageItemId}
+          packageItemQty={packageItemQty}
+          setPackageItemQty={setPackageItemQty}
           dbBranches={dbBranches}
           dbVendors={dbVendors}
+          dbInventory={dbInventory}
           handleSavePackage={handleSavePackage}
           resetPackageForm={resetPackageForm}
           setModalOpen={setModalOpen}
@@ -1792,7 +1830,9 @@ export default function App() {
                       ? "Update Shipment Status"
                       : logisticsModal.action === "return"
                         ? "Mark Returned"
-                        : "Forward to Hub"}
+                        : logisticsModal.action === "outForDelivery"
+                          ? "Out for Delivery"
+                          : "Forward to Hub"}
               </h2>
               <button className="secondary-btn" style={{ padding: "2px 8px", border: "none" }} onClick={resetLogisticsModal}>✕</button>
             </div>
@@ -1804,8 +1844,8 @@ export default function App() {
                 </div>
               </div>
 
-              {(logisticsModal.action === "dispatch" || logisticsModal.action === "forward" || (logisticsModal.action === "statusUpdate" && logisticsStatus === "in_transit")) && (
-                <div className="grid-2">
+              {(logisticsModal.action === "dispatch" || logisticsModal.action === "forward" || logisticsModal.action === "outForDelivery" || (logisticsModal.action === "statusUpdate" && logisticsStatus === "in_transit")) && (
+                <div className="grid-3">
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Driver Name</label>
                     <input type="text" className="swiss-input" value={logisticsDriverName} onChange={(e) => setLogisticsDriverName(e.target.value)} />
@@ -1813,6 +1853,10 @@ export default function App() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vehicle Number</label>
                     <input type="text" className="swiss-input" value={logisticsVehicleNumber} onChange={(e) => setLogisticsVehicleNumber(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Driver Phone</label>
+                    <input type="text" className="swiss-input" value={logisticsDriverPhone} onChange={(e) => setLogisticsDriverPhone(e.target.value)} />
                   </div>
                 </div>
               )}
@@ -1922,7 +1966,9 @@ export default function App() {
                         ? "Save Status"
                         : logisticsModal.action === "return"
                           ? "Mark Returned"
-                          : "Forward"}
+                          : logisticsModal.action === "outForDelivery"
+                            ? "Confirm Out for Delivery"
+                            : "Forward"}
                 </button>
               </div>
             </form>

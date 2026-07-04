@@ -22,14 +22,17 @@ type PackageModalProps = {
   packageDriverName: string; setPackageDriverName: (v: string) => void;
   packageVehicleNumber: string; setPackageVehicleNumber: (v: string) => void;
   packageVendorId: Id<"vendors"> | null; setPackageVendorId: (v: Id<"vendors"> | null) => void;
+  packageItemId: Id<"inventory"> | null; setPackageItemId: (v: Id<"inventory"> | null) => void;
+  packageItemQty: string; setPackageItemQty: (v: string) => void;
   dbBranches: Doc<"branches">[];
   dbVendors: Doc<"vendors">[];
+  dbInventory: Doc<"inventory">[];
   handleSavePackage: (e: FormEvent) => void;
   resetPackageForm: () => void;
   setModalOpen: (v: ModalKind) => void;
 };
 
-export default function PackageModal({ editingPackageId, packageModalTab, setPackageModalTab, senderName, setSenderName, senderPhone, setSenderPhone, senderAddress, setSenderAddress, receiverName, setReceiverName, receiverPhone, setReceiverPhone, receiverAddress, setReceiverAddress, packageType, setPackageType, packageWeight, setPackageWeight, packageDimL, setPackageDimL, packageDimW, setPackageDimW, packageDimH, setPackageDimH, packageDescription, setPackageDescription, assignBranchIdx, setAssignBranchIdx, packageDriverName, setPackageDriverName, packageVehicleNumber, setPackageVehicleNumber, packageVendorId, setPackageVendorId, dbBranches, dbVendors, handleSavePackage, resetPackageForm, setModalOpen }: PackageModalProps) {
+export default function PackageModal({ editingPackageId, packageModalTab, setPackageModalTab, senderName, setSenderName, senderPhone, setSenderPhone, senderAddress, setSenderAddress, receiverName, setReceiverName, receiverPhone, setReceiverPhone, receiverAddress, setReceiverAddress, packageType, setPackageType, packageWeight, setPackageWeight, packageDimL, setPackageDimL, packageDimW, setPackageDimW, packageDimH, setPackageDimH, packageDescription, setPackageDescription, assignBranchIdx, setAssignBranchIdx, packageDriverName, setPackageDriverName, packageVehicleNumber, setPackageVehicleNumber, packageVendorId, setPackageVendorId, packageItemId, setPackageItemId, packageItemQty, setPackageItemQty, dbBranches, dbVendors, dbInventory, handleSavePackage, resetPackageForm, setModalOpen }: PackageModalProps) {
   return (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -134,6 +137,32 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                       ))}
                     </select>
                   </div>
+                  {packageVendorId && (() => {
+                    const vendorItems = dbInventory.filter(item => item.vendorId === packageVendorId);
+                    return vendorItems.length > 0 ? (
+                      <div className="grid-2">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Inventory Item (optional)</label>
+                          <select className="swiss-input" value={packageItemId || ""} onChange={(e) => {
+                            setPackageItemId(e.target.value ? e.target.value as Id<"inventory"> : null);
+                            if (!packageDescription.trim() && e.target.value) {
+                              const item = vendorItems.find(i => i._id === e.target.value);
+                              if (item) setPackageDescription(`${packageItemQty || "1"}× ${item.productName}`);
+                            }
+                          }}>
+                            <option value="">— None —</option>
+                            {vendorItems.map(item => (
+                              <option key={item._id} value={item._id}>{item.productName} (stock: {item.quantity})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Item Quantity</label>
+                          <input type="number" min="1" className="swiss-input" value={packageItemQty} onChange={(e) => setPackageItemQty(e.target.value)} placeholder="0" />
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Depot</label>
                     <select className="swiss-input" value={assignBranchIdx} onChange={(e) => setAssignBranchIdx(parseInt(e.target.value))}>
