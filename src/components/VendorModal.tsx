@@ -45,6 +45,7 @@ export default function VendorModal({ editingVendorId, newVendorName, setNewVend
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Email Address</label>
                   <input type="email" required className="swiss-input" value={newVendorEmail} onChange={(e) => setNewVendorEmail(e.target.value)} />
+                  <p style={{ fontSize: 10, color: "var(--badge-text)", marginTop: 2 }}>A portal login is created automatically (password: vendor123)</p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Contact Person</label>

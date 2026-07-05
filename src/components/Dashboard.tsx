@@ -8,8 +8,6 @@ type DashboardProps = {
   deliveredCount: number;
   successRate: number;
   dbInventory: Doc<"inventory">[];
-  dbVendors: Doc<"vendors">[];
-  dbBranches: Doc<"branches">[];
   lineChartPath: string;
   weeklyCounts: number[];
   barChartMax: number;
@@ -26,8 +24,6 @@ export default function Dashboard({
   deliveredCount,
   successRate,
   dbInventory,
-  dbVendors,
-  dbBranches,
   lineChartPath,
   weeklyCounts,
   barChartMax,
@@ -87,12 +83,12 @@ export default function Dashboard({
             <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dashboardPackages.filter((p) => p.status === "delivered").length}</p>
           </div>
           <div className="swiss-card">
-            <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Vendors</h4>
-            <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbVendors.length}</p>
+            <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Stock Items</h4>
+            <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbInventory.length}</p>
           </div>
           <div className="swiss-card">
-            <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Branches</h4>
-            <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbBranches.length}</p>
+            <h4 style={{ fontSize: 10, fontWeight: 700, color: "var(--badge-text)", textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.05em" }}>Stock Value (NPR)</h4>
+            <p style={{ fontSize: 28, fontWeight: 800, color: "var(--title-color)" }} className="code-text">{dbInventory.reduce((s, i) => s + i.quantity * i.price, 0).toLocaleString()}</p>
           </div>
         </div>
       )}

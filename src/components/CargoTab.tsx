@@ -39,12 +39,12 @@ export default function CargoTab({ activeTab, dbPackages, loggedInDbUser, handle
                       if (!userBranchId) return false;
                       if (activeTab === "incoming") {
                         return (
-                          (p.destinationBranchId === userBranchId && p.status === "in_transit") ||
+                          (p.currentBranchId === userBranchId && p.status === "in_transit") ||
                           (p.currentBranchId === userBranchId && p.status === "arrived_at_branch" && p.currentBranchId !== p.destinationBranchId)
                         );
                       }
                       return p.currentBranchId === userBranchId &&
-                        (p.status === "booked" || p.status === "in_transit" || p.status === "arrived_at_branch" || p.status === "out_for_delivery");
+                        (p.status === "booked" || p.status === "arrived_at_branch" || p.status === "out_for_delivery");
                     })
                     .map((p) => (
                       <tr key={p._id}>

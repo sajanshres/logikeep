@@ -503,7 +503,11 @@ export default function App() {
 
     setLogisticsModal({ action, packageId });
     setLogisticsStatus(initialStatus);
-    setLogisticsBranchId(action === "forward" ? "" : shipment ? String(shipment.currentBranchId) : branchId);
+    setLogisticsBranchId(
+      action === "forward" ? "" :
+      action === "dispatch" ? (shipment ? String(shipment.destinationBranchId) : branchId) :
+      shipment ? String(shipment.currentBranchId) : branchId
+    );
     setLogisticsDriverName(shipment?.driverName || "");
     setLogisticsVehicleNumber(shipment?.vehicleNumber || "");
     setLogisticsDriverPhone(shipment?.driverPhone || "");
@@ -712,6 +716,17 @@ export default function App() {
         partnerType: newVendorType,
         status: "active",
       });
+      // auto-create portal login for the client
+      const emailExists = dbUsers.some((u) => u.email.toLowerCase() === newVendorEmail.toLowerCase());
+      if (!emailExists) {
+        await createUser({
+          name: newVendorName,
+          email: newVendorEmail,
+          passwordHash: "vendor123",
+          role: "vendor",
+          active: true,
+        });
+      }
     }
     resetVendorForm();
     setModalOpen(null);
@@ -1109,7 +1124,7 @@ export default function App() {
           packageId: shipment._id,
           status: "in_transit",
           currentBranchId,
-          details: logisticsDetails || `Dispatched with driver ${logisticsDriverName || "N/A"}${logisticsVehicleNumber ? ` (Vehicle: ${logisticsVehicleNumber})` : ""}`,
+          details: logisticsDetails || `Dispatched to ${branchName(currentBranchId)} with driver ${logisticsDriverName || "N/A"}${logisticsVehicleNumber ? ` (Vehicle: ${logisticsVehicleNumber})` : ""}`,
           updatedById: loggedInDbUser._id,
           driverName: logisticsDriverName || undefined,
           vehicleNumber: logisticsVehicleNumber || undefined,
@@ -1425,9 +1440,7 @@ export default function App() {
             activeShipments={activeShipments}
             deliveredCount={deliveredCount}
             successRate={successRate}
-            dbInventory={myInventory}
-            dbVendors={dbVendors}
-            dbBranches={dbBranches}
+            dbInventory={role === "Vendor" ? clientInventory : myInventory}
             lineChartPath={lineChartPath}
             weeklyCounts={weeklyCounts}
             barChartMax={barChartMax}
@@ -1931,9 +1944,11 @@ export default function App() {
                 </div>
               )}
 
-              {logisticsModal.action === "forward" && (
+              {(logisticsModal.action === "forward" || logisticsModal.action === "dispatch") && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Forward To Hub</label>
+                  <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>
+                    {logisticsModal.action === "dispatch" ? "Dispatch To (Next Hub)" : "Forward To Hub"}
+                  </label>
                   <select className="swiss-input" value={logisticsBranchId} onChange={(e) => setLogisticsBranchId(e.target.value)}>
                     <option value="">Select branch</option>
                     {dbBranches.map((branch) => (
