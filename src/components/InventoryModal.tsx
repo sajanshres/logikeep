@@ -49,9 +49,12 @@ export default function InventoryModal({ editingProductId, newProductName, setNe
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor (Owner)</label>
-                  <select className="swiss-input" value={newProductVendorIdx} onChange={(e) => setNewProductVendorIdx(parseInt(e.target.value))}>
-                    {dbVendors.map((v, i) => (
-                      <option key={v._id} value={i}>{v.name}</option>
+                  <select className="swiss-input" value={dbVendors[newProductVendorIdx]?._id || ""} onChange={(e) => {
+                    const idx = dbVendors.findIndex(v => v._id === e.target.value);
+                    setNewProductVendorIdx(idx >= 0 ? idx : 0);
+                  }}>
+                    {dbVendors.filter(v => v.status === "active").map((v) => (
+                      <option key={v._id} value={v._id}>{v.name}</option>
                     ))}
                   </select>
                 </div>

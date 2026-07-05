@@ -154,13 +154,35 @@ export const updateStatus = mutation({
   },
   handler: async (ctx, args) => {
     const { packageId, status, currentBranchId, details, updatedById, ...optionalFields } = args;
-    
+
+    // read old state first so we know the previous status
+    const prev = await ctx.db.get(packageId);
+
     await ctx.db.patch(packageId, {
       status,
       currentBranchId,
       updatedAt: Date.now(),
       ...optionalFields,
     });
+
+    // restore stock if package is returned and had an inventory item
+    if (status === "returned" && prev && prev.status !== "returned" && prev.inventoryItemId && prev.itemQuantity && prev.itemQuantity > 0) {
+      const item = await ctx.db.get(prev.inventoryItemId);
+      if (item) {
+        await ctx.db.patch(prev.inventoryItemId, {
+          quantity: item.quantity + prev.itemQuantity,
+          updatedAt: Date.now(),
+        });
+        await ctx.db.insert("stockMovements", {
+          productId: prev.inventoryItemId,
+          type: "purchase",
+          quantityChanged: prev.itemQuantity,
+          notes: `Returned from delivery ${prev.trackingNumber}`,
+          updatedById,
+          timestamp: Date.now(),
+        });
+      }
+    }
 
     // Insert tracking update log
     return await ctx.db.insert("movementLogs", {

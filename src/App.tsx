@@ -307,6 +307,14 @@ export default function App() {
     e.preventDefault();
     const user = authLoginUser;
     if (user && (user.active ?? true) && verifyPassword(loginPassword, user.passwordHash)) {
+      // if vendor role, check vendor account is active
+      if (user.role === "vendor") {
+        const vendor = dbVendors.find(v => v.email.toLowerCase() === user.email.toLowerCase());
+        if (vendor && vendor.status !== "active") {
+          alert("This client account has been deactivated.");
+          return;
+        }
+      }
       const roleMap: Record<string, "Manager" | "Branch Staff" | "Vendor"> = {
         admin: "Manager",
         branch_staff: "Branch Staff",
@@ -669,6 +677,9 @@ export default function App() {
       }
       const destBranch = dbBranches[assignBranchIdx] || dbBranches[0];
       const originBranch = dbBranches[0];
+      const linkedItem = packageItemId ? dbInventory.find(i => i._id === packageItemId) : null;
+      const itemOrigin = linkedItem ? dbBranches.find(b => b._id === linkedItem.branchId) : null;
+      const finalOrigin = itemOrigin || originBranch;
       await createPackage({
         senderName,
         senderContact: senderPhone,
@@ -685,9 +696,9 @@ export default function App() {
         assignedVendorId: packageVendorId || undefined,
         inventoryItemId: packageItemId || undefined,
         itemQuantity: packageItemId ? (parseInt(packageItemQty, 10) || 1) : undefined,
-        originBranchId: originBranch._id,
+        originBranchId: finalOrigin._id,
         destinationBranchId: destBranch._id,
-        currentBranchId: originBranch._id,
+        currentBranchId: finalOrigin._id,
       });
     }
     resetPackageForm();
@@ -707,6 +718,12 @@ export default function App() {
         partnerType: newVendorType,
       });
     } else {
+      // check for duplicate email
+      const emailTaken = dbVendors.some(v => v.email.toLowerCase() === newVendorEmail.toLowerCase());
+      if (emailTaken) {
+        alert("A client with this email already exists.");
+        return;
+      }
       await createVendor({
         name: newVendorName,
         contactPerson: newVendorContact,
@@ -940,7 +957,7 @@ export default function App() {
     ? dbUsers.find((u) => u.email.toLowerCase() === loggedInUser.email.toLowerCase())
     : undefined;
   const matchedVendor = loggedInUser
-    ? dbVendors.find((v) => v.email.toLowerCase() === loggedInUser.email.toLowerCase())
+    ? dbVendors.find((v) => v.email.toLowerCase() === loggedInUser.email.toLowerCase() && v.status === "active")
     : undefined;
   const branchScopedPackages = loggedInDbUser?.branchId
     ? dbPackages.filter((p) => p.originBranchId === loggedInDbUser.branchId || p.currentBranchId === loggedInDbUser.branchId || p.destinationBranchId === loggedInDbUser.branchId)
@@ -1063,6 +1080,14 @@ export default function App() {
   const toggleVendorStatus = async (id: Id<"vendors">, current: string) => {
     const next = current === "active" ? "inactive" as const : "active" as const;
     await updateVendor({ vendorId: id, status: next });
+    // also lock/unlock the portal login
+    const vendor = dbVendors.find(v => v._id === id);
+    if (vendor) {
+      const user = dbUsers.find(u => u.email.toLowerCase() === vendor.email.toLowerCase());
+      if (user) {
+        await updateUser({ userId: user._id, active: next === "active" });
+      }
+    }
   };
 
   const handleMarkArrived = async (packageId: Id<"packages">) => {

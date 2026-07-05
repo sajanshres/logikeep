@@ -76,6 +76,10 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
     }
     const originBranch = dbBranches[fromBranchIdx] || dbBranches[0];
     const destBranch = dbBranches[destBranchIdx] || dbBranches[0];
+    // if an item is selected, force origin to the item's actual branch
+    const itemForOrigin = selectedItemId ? dbInventory.find(i => i._id === selectedItemId) : null;
+    const actualOrigin = itemForOrigin ? dbBranches.find(b => b._id === itemForOrigin.branchId) : null;
+    const finalOrigin = actualOrigin || originBranch;
     await createPackage({
       senderName: matchedVendor?.name || "Client",
       senderContact: matchedVendor?.contactNumber || "",
@@ -86,9 +90,9 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
       packageType: pkgType,
       weight: parseFloat(weight) || 0,
       description: description || undefined,
-      originBranchId: originBranch._id,
+      originBranchId: finalOrigin._id,
       destinationBranchId: destBranch._id,
-      currentBranchId: originBranch._id,
+      currentBranchId: finalOrigin._id,
       assignedVendorId: matchedVendor._id,
       inventoryItemId: (selectedItemId ? selectedItemId as Id<"inventory"> : undefined),
       itemQuantity: selectedItemId ? (parseInt(itemQty, 10) || 1) : undefined,
@@ -124,12 +128,22 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
           </div>
           <div className="grid-2">
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>From Branch</label>
-              <select className="swiss-input" value={fromBranchIdx} onChange={(e) => setFromBranchIdx(parseInt(e.target.value))}>
-                {dbBranches.map((b, i) => (
-                  <option key={b._id} value={i}>{b.name} ({b.code})</option>
-                ))}
-              </select>
+              <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>
+                {selectedItemId ? "Ships From (locked to item)" : "From Branch"}
+              </label>
+              {selectedItemId ? (
+                <input type="text" className="swiss-input" value={(() => {
+                  const item = dbInventory.find(i => i._id === selectedItemId);
+                  const branch = item ? dbBranches.find(b => b._id === item.branchId) : null;
+                  return branch ? `${branch.name} (${branch.code})` : "—";
+                })()} disabled style={{ background: "var(--hover-bg)" }} />
+              ) : (
+                <select className="swiss-input" value={fromBranchIdx} onChange={(e) => setFromBranchIdx(parseInt(e.target.value))}>
+                  {dbBranches.map((b, i) => (
+                    <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Branch</label>
@@ -167,9 +181,13 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Item from Inventory (optional)</label>
                   <select className="swiss-input" value={selectedItemId} onChange={(e) => {
                     setSelectedItemId(e.target.value);
-                    if (!description.trim() && e.target.value) {
+                    if (e.target.value) {
                       const item = vendorItems.find(i => i._id === e.target.value);
-                      if (item) setDescription(`${itemQty || "1"}× ${item.productName}`);
+                      if (item) {
+                        const branchIdx = dbBranches.findIndex(b => b._id === item.branchId);
+                        if (branchIdx >= 0) setFromBranchIdx(branchIdx);
+                        if (!description.trim()) setDescription(`${itemQty || "1"}× ${item.productName}`);
+                      }
                     }
                   }}>
                     <option value="">— None —</option>

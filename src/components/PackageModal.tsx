@@ -132,7 +132,7 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Vendor (Client)</label>
                     <select className="swiss-input" value={packageVendorId || ""} onChange={(e) => setPackageVendorId(e.target.value ? e.target.value as Id<"vendors"> : null)}>
                       <option value="">-- Walk-in Customer --</option>
-                      {dbVendors.map((v) => (
+                      {dbVendors.filter(v => v.status === "active").map((v) => (
                         <option key={v._id} value={v._id}>{v.name}</option>
                       ))}
                     </select>
