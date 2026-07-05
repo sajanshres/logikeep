@@ -25,6 +25,7 @@ import InvoicesTab from "./components/InvoicesTab";
 import SettingsTab from "./components/SettingsTab";
 import ProfileTab from "./components/ProfileTab";
 import CargoTab from "./components/CargoTab";
+import VendorInventoryTab from "./components/VendorInventoryTab";
 import "./App.css";
 
 const SETTINGS_KEY = "logikeep-settings";
@@ -941,6 +942,12 @@ export default function App() {
   const notificationPackages = visiblePackages;
   const vendorPickupPackages = vendorPackages.filter((p) => p.status === "booked");
   const vendorInvoicePackages = vendorPackages.filter((p) => p.status === "delivered");
+  const clientInventory = matchedVendor
+    ? dbInventory.filter((item) => item.vendorId === matchedVendor._id)
+    : [];
+  const clientMovements = dbAllMovements.filter((m) =>
+    clientInventory.some((i) => i._id === m.productId)
+  );
   // branch staff only see their own branch stock
   const myInventory = loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId
     ? dbInventory.filter((item) => item.branchId === loggedInDbUser.branchId)
@@ -1299,6 +1306,7 @@ export default function App() {
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="dashboard" label="Dashboard" icon={<LayoutDashboard size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="packages" label="My Shipments" icon={<Package size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="pickup" label="Delivery Requests" icon={<FileText size={14} />} />
+              <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="myinventory" label="My Inventory" icon={<Building2 size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="track" label="Track Shipment" icon={<Search size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="invoices" label="Invoices" icon={<FileText size={14} />} />
               <NavBtn activeTab={activeTab} setActiveTab={setActiveTab} tab="profile" label="Vendor Profile" icon={<Users size={14} />} />
@@ -1528,6 +1536,16 @@ export default function App() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             branchName={branchName}
+          />
+        )}
+
+        {/* My Inventory Tab (Vendor) */}
+        {activeTab === "myinventory" && (
+          <VendorInventoryTab
+            clientInventory={clientInventory}
+            clientMovements={clientMovements}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
           />
         )}
 
