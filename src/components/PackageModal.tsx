@@ -137,7 +137,7 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                       ))}
                     </select>
                   </div>
-                  {packageVendorId && (() => {
+                  {!editingPackageId && packageVendorId && (() => {
                     const vendorItems = dbInventory.filter(item => item.vendorId === packageVendorId);
                     return vendorItems.length > 0 ? (
                       <div className="grid-2">

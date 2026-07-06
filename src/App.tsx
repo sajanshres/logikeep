@@ -236,7 +236,7 @@ export default function App() {
   const dbInventory = useQuery(api.inventory.list) ?? [];
   const dbMovements = useQuery(api.inventory.getMovements, txProductId ? { productId: txProductId } : "skip") ?? [];
   const dbAllMovements = useQuery(api.inventory.getAllMovements) ?? [];
-  const authLoginUser = useQuery(api.users.getByEmail, loginEmail ? { email: loginEmail } : "skip");
+  const authLoginUser = useQuery(api.users.getByEmail, loginEmail ? { email: loginEmail.trim().toLowerCase() } : "skip");
   const authSessionUser = useQuery(api.users.getByEmail, loggedInUser && activeTab === "settings" ? { email: loggedInUser.email } : "skip");
 
   // Convex mutations
@@ -577,6 +577,11 @@ export default function App() {
         alert("Passwords do not match!");
         return;
       }
+      const emailTakenEdit = dbUsers.some(u => u._id !== editingUserId && u.email.toLowerCase() === newUserEmail.toLowerCase());
+      if (emailTakenEdit) {
+        alert("Another user with this email already exists.");
+        return;
+      }
       await updateUser({
         userId: editingUserId,
         name: newFullName,
@@ -599,7 +604,7 @@ export default function App() {
       }
       await createUser({
         name: newFullName,
-        email: newUserEmail,
+        email: newUserEmail.toLowerCase(),
         passwordHash: newUserPassword,
         role: newUserRole,
         branchId: branch?._id,
@@ -717,6 +722,11 @@ export default function App() {
   const handleSaveVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingVendorId) {
+      const emailTakenEdit = dbVendors.some(v => v._id !== editingVendorId && v.email.toLowerCase() === newVendorEmail.toLowerCase());
+      if (emailTakenEdit) {
+        alert("Another client with this email already exists.");
+        return;
+      }
       await updateVendor({
         vendorId: editingVendorId,
         name: newVendorName,
@@ -737,7 +747,7 @@ export default function App() {
         name: newVendorName,
         contactPerson: newVendorContact,
         contactNumber: newVendorPhone,
-        email: newVendorEmail,
+        email: newVendorEmail.toLowerCase(),
         address: newVendorAddress,
         partnerType: newVendorType,
         status: "active",
@@ -747,7 +757,7 @@ export default function App() {
       if (!emailExists) {
         await createUser({
           name: newVendorName,
-          email: newVendorEmail,
+          email: newVendorEmail.toLowerCase(),
           passwordHash: "vendor123",
           role: "vendor",
           active: true,
