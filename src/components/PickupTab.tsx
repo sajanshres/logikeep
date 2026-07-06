@@ -206,7 +206,16 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Quantity</label>
-                  <input type="number" min="1" className="swiss-input" value={itemQty} onChange={(e) => setItemQty(e.target.value)} placeholder="0" />
+                  <input type="number" min="1" className="swiss-input" value={itemQty} onChange={(e) => {
+                    const newQty = e.target.value;
+                    setItemQty(newQty);
+                    if (selectedItemId && description.trim()) {
+                      const item = vendorItems.find(i => i._id === selectedItemId);
+                      if (item && description.match(/^\d+× .+$/)) {
+                        setDescription(`${newQty || "1"}× ${item.productName}`);
+                      }
+                    }
+                  }} placeholder="0" />
                 </div>
               </div>
             ) : null;

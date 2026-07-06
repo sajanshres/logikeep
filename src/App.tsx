@@ -822,6 +822,10 @@ export default function App() {
     
     const product = dbInventory.find(p => p._id === txProductId);
     if (!product) return;
+    if (txType === "sale" && qtyVal > product.quantity) {
+      alert(`Insufficient stock. Available: ${product.quantity}.`);
+      return;
+    }
     
     let appliedChange = qtyVal;
     if (txType === "sale") appliedChange = -Math.abs(qtyVal);
@@ -856,7 +860,8 @@ export default function App() {
       csvData = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     } else if (reportTab === "inventory") {
       const headers = ["Date", "Type", "Change", "Notes", "Product", "User"];
-      const rows = dbAllMovements.slice().reverse().map(log => {
+      const reportMovements = loggedInUser?.role === "Branch Staff" ? branchScopedMovements : dbAllMovements;
+      const rows = reportMovements.slice().reverse().map(log => {
         const product = dbInventory.find(p => p._id === log.productId);
         const user = dbUsers.find(u => u._id === log.updatedById);
         return [
@@ -871,7 +876,7 @@ export default function App() {
       csvData = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     } else if (reportTab === "analytics") {
       const rows = [
-        ["Total Shipments", dbPackages.length],
+        ["Total Shipments", filteredReportPackages.length],
         ["Delivered", reportDelivered],
         ["In Transit", reportInTransit],
         ["Returned", reportReturned],
@@ -879,7 +884,7 @@ export default function App() {
         ["Total Products", myInventory.length],
         ["Low Stock Items", reportLowStock],
         ["Stock Value", `Rs ${reportStockValue}`],
-        ["Active Vendors", dbVendors.length],
+        ["Active Vendors", dbVendors.filter(v => v.status === "active").length],
       ];
       csvData = [["Metric", "Value"].join(","), ...rows.map(r => r.join(","))].join("\n");
     }
@@ -989,6 +994,12 @@ export default function App() {
   const clientMovements = dbAllMovements.filter((m) =>
     clientInventory.some((i) => i._id === m.productId)
   );
+  const branchScopedMovements = loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId
+    ? dbAllMovements.filter(m => {
+        const item = dbInventory.find(i => i._id === m.productId);
+        return item && item.branchId === loggedInDbUser.branchId;
+      })
+    : dbAllMovements;
   // branch staff only see their own branch stock
   const myInventory = loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId
     ? dbInventory.filter((item) => item.branchId === loggedInDbUser.branchId)
@@ -1054,6 +1065,9 @@ export default function App() {
   const directionTotal = directionSlices.reduce((sum, s) => sum + s.count, 0) || 1;
 
   const filteredReportPackages = dbPackages.filter((p) => {
+    if (loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId) {
+      if (p.originBranchId !== loggedInDbUser.branchId && p.currentBranchId !== loggedInDbUser.branchId && p.destinationBranchId !== loggedInDbUser.branchId) return false;
+    }
     if (reportBranch !== "All" && branchName(p.destinationBranchId) !== reportBranch) return false;
     if (reportPartner !== "All") {
       const vendor = p.assignedVendorId ? dbVendors.find((v) => v._id === p.assignedVendorId) : null;
@@ -1071,10 +1085,10 @@ export default function App() {
   });
 
   // numbers for the analytics summary report
-  const reportDelivered = dbPackages.filter((p) => p.status === "delivered").length;
-  const reportInTransit = dbPackages.filter((p) => p.status === "in_transit" || p.status === "out_for_delivery").length;
-  const reportReturned = dbPackages.filter((p) => p.status === "returned").length;
-  const reportSuccessRate = dbPackages.length > 0 ? Math.round((reportDelivered / dbPackages.length) * 100) : 0;
+  const reportDelivered = filteredReportPackages.filter((p) => p.status === "delivered").length;
+  const reportInTransit = filteredReportPackages.filter((p) => p.status === "in_transit" || p.status === "out_for_delivery").length;
+  const reportReturned = filteredReportPackages.filter((p) => p.status === "returned").length;
+  const reportSuccessRate = filteredReportPackages.length > 0 ? Math.round((reportDelivered / filteredReportPackages.length) * 100) : 0;
   const reportLowStock = myInventory.filter((item) => item.quantity <= item.lowStockAlert).length;
   const reportStockValue = myInventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
@@ -1613,10 +1627,9 @@ export default function App() {
             setReportPartner={setReportPartner}
             dbBranches={dbBranches}
             dbVendors={dbVendors}
-            dbPackages={dbPackages}
             dbInventory={myInventory}
             dbUsers={dbUsers}
-            dbAllMovements={dbAllMovements}
+            dbAllMovements={loggedInUser?.role === "Branch Staff" ? branchScopedMovements : dbAllMovements}
             filteredReportPackages={filteredReportPackages}
             reportDelivered={reportDelivered}
             reportInTransit={reportInTransit}

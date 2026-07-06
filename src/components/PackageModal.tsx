@@ -158,7 +158,16 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Item Quantity</label>
-                          <input type="number" min="1" className="swiss-input" value={packageItemQty} onChange={(e) => setPackageItemQty(e.target.value)} placeholder="0" />
+                          <input type="number" min="1" className="swiss-input" value={packageItemQty} onChange={(e) => {
+                            const newQty = e.target.value;
+                            setPackageItemQty(newQty);
+                            if (packageItemId && packageDescription.trim()) {
+                              const item = vendorItems.find(i => i._id === packageItemId);
+                              if (item && packageDescription.match(/^\d+× .+$/)) {
+                                setPackageDescription(`${newQty || "1"}× ${item.productName}`);
+                              }
+                            }
+                          }} placeholder="0" />
                         </div>
                       </div>
                     ) : null;

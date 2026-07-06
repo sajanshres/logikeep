@@ -15,7 +15,7 @@ type ReportsProps = {
   setReportPartner: (v: string) => void;
   dbBranches: Doc<"branches">[];
   dbVendors: Doc<"vendors">[];
-  dbPackages: Doc<"packages">[];
+
   dbInventory: Doc<"inventory">[];
   dbUsers: { _id: Id<"users">; name: string }[];
   dbAllMovements: Doc<"stockMovements">[];
@@ -35,7 +35,7 @@ export default function Reports({
   reportTab, setReportTab, exportToCSV,
   reportDateFrom, setReportDateFrom, reportDateTo, setReportDateTo,
   reportBranch, setReportBranch, reportPartner, setReportPartner,
-  dbBranches, dbVendors, dbPackages, dbInventory, dbUsers, dbAllMovements,
+  dbBranches, dbVendors, dbInventory, dbUsers, dbAllMovements,
   filteredReportPackages,
   reportDelivered, reportInTransit, reportReturned, reportSuccessRate, reportLowStock, reportStockValue,
   branchName, statusLabel, timezone,
@@ -166,7 +166,7 @@ export default function Reports({
               <div className="grid-3" style={{ marginTop: 16 }}>
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
                   <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Total Shipments</h4>
-                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbPackages.length}</div>
+                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{filteredReportPackages.length}</div>
                   <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>All time volume</div>
                 </div>
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
@@ -176,7 +176,7 @@ export default function Reports({
                 </div>
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
                   <h4 style={{ margin: "0 0 8px 0", color: "var(--title-color)" }}>Active Vendors</h4>
-                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbVendors.length}</div>
+                  <div className="stat-value" style={{ fontSize: 32, fontWeight: 800 }}>{dbVendors.filter(v => v.status === "active").length}</div>
                   <div className="stat-subtitle" style={{ fontSize: 12, color: "var(--badge-text)", marginTop: 8 }}>Client Businesses</div>
                 </div>
                 <div className="swiss-card stat-card" style={{ padding: 24 }}>
