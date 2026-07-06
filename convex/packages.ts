@@ -41,8 +41,10 @@ export const create = mutation({
     driverName: v.optional(v.string()),
     vehicleNumber: v.optional(v.string()),
     driverPhone: v.optional(v.string()),
+    createdById: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    const { createdById, ...packageArgs } = args;
     const origin = await ctx.db.get(args.originBranchId);
     const dest = await ctx.db.get(args.destinationBranchId);
     if (!origin || !dest) {
@@ -76,13 +78,13 @@ export const create = mutation({
         type: "sale",
         quantityChanged: -args.itemQuantity,
         notes: `Reserved for delivery ${trackingNumber}`,
-        updatedById: operator._id,
+        updatedById: createdById ?? operator._id,
         timestamp: Date.now(),
       });
     }
 
     const packageId = await ctx.db.insert("packages", {
-      ...args,
+      ...packageArgs,
       trackingNumber,
       status: "booked",
       createdAt: Date.now(),
@@ -95,7 +97,7 @@ export const create = mutation({
       locationBranchId: args.originBranchId,
       details: "Shipment booked and queued for dispatch.",
       timestamp: Date.now(),
-      updatedById: operator._id,
+      updatedById: createdById ?? operator._id,
     });
 
     return packageId;

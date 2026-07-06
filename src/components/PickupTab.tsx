@@ -24,6 +24,7 @@ type PickupTabProps = {
     itemQuantity?: number;
     driverName?: string;
     vehicleNumber?: string;
+    createdById?: Id<"users">;
   }) => Promise<unknown>;
   dbBranches: Doc<"branches">[];
   dbInventory: Doc<"inventory">[];

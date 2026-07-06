@@ -663,6 +663,17 @@ export default function App() {
       ? `${packageDimL} x ${packageDimW} x ${packageDimH} cm`
       : undefined;
     if (editingPackageId) {
+      // don't allow reassigning client if package has linked inventory
+      if (packageVendorId) {
+        const pkg = dbPackages.find(p => p._id === editingPackageId);
+        if (pkg?.inventoryItemId) {
+          const item = dbInventory.find(i => i._id === pkg.inventoryItemId);
+          if (item && packageVendorId !== item.vendorId) {
+            alert("This shipment carries goods from the assigned client's inventory — the client cannot be changed.");
+            return;
+          }
+        }
+      }
       await updatePackage({
         packageId: editingPackageId,
         senderName,
@@ -713,6 +724,7 @@ export default function App() {
         originBranchId: finalOrigin._id,
         destinationBranchId: destBranch._id,
         currentBranchId: finalOrigin._id,
+        createdById: loggedInDbUser?._id,
       });
     }
     resetPackageForm();
@@ -1592,7 +1604,7 @@ export default function App() {
             vendorPickupPackages={vendorPickupPackages}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            createPackage={createPackage}
+            createPackage={(args) => createPackage({ ...args, createdById: loggedInDbUser?._id })}
             dbBranches={dbBranches}
             dbInventory={dbInventory}
             matchedVendor={matchedVendor}
