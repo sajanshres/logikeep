@@ -167,7 +167,9 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                     <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Depot</label>
                     <select className="swiss-input" value={assignBranchIdx} onChange={(e) => setAssignBranchIdx(parseInt(e.target.value))}>
                       {dbBranches.map((b, i) => (
-                        <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                        (b.status ?? "active") === "active" ? (
+                          <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                        ) : null
                       ))}
                     </select>
                   </div>

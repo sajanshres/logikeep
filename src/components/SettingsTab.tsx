@@ -48,7 +48,9 @@ export default function SettingsTab({ settingsTab, setSettingsTab, portalName, s
                   <select className="swiss-input" value={defaultBranch} onChange={(e) => setDefaultBranch(e.target.value)}>
                     <option value="">Select branch</option>
                     {dbBranches.map((b) => (
-                      <option key={b._id} value={b.name}>{b.name}</option>
+                      (b.status ?? "active") === "active" ? (
+                        <option key={b._id} value={b.name}>{b.name}</option>
+                      ) : null
                     ))}
                   </select>
                 </div>

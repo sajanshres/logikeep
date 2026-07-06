@@ -592,6 +592,11 @@ export default function App() {
         alert("Passwords do not match!");
         return;
       }
+      const emailTaken = dbUsers.some(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
+      if (emailTaken) {
+        alert("A user with this email already exists.");
+        return;
+      }
       await createUser({
         name: newFullName,
         email: newUserEmail,
@@ -680,6 +685,10 @@ export default function App() {
       const linkedItem = packageItemId ? dbInventory.find(i => i._id === packageItemId) : null;
       const itemOrigin = linkedItem ? dbBranches.find(b => b._id === linkedItem.branchId) : null;
       const finalOrigin = itemOrigin || originBranch;
+      if (finalOrigin._id === destBranch._id) {
+        alert("Shipment origin and destination cannot be the same branch.");
+        return;
+      }
       await createPackage({
         senderName,
         senderContact: senderPhone,
@@ -984,7 +993,8 @@ export default function App() {
   const myInventory = loggedInUser?.role === "Branch Staff" && loggedInDbUser?.branchId
     ? dbInventory.filter((item) => item.branchId === loggedInDbUser.branchId)
     : dbInventory;
-  const lowStockItems = notifyLowStock ? myInventory.filter((item) => item.quantity <= item.lowStockAlert) : [];
+  const notifInventory = loggedInUser?.role === "Vendor" ? clientInventory : myInventory;
+  const lowStockItems = notifyLowStock ? notifInventory.filter((item) => item.quantity <= item.lowStockAlert) : [];
   const deliveryNotifications = notifyDelivery
     ? notificationPackages
         .filter((p) => p.status === "delivered")
@@ -1936,7 +1946,9 @@ export default function App() {
                       <select className="swiss-input" value={logisticsBranchId} onChange={(e) => setLogisticsBranchId(e.target.value)}>
                         <option value="">Select branch</option>
                         {dbBranches.map((branch) => (
-                          <option key={branch._id} value={branch._id}>{branch.name}</option>
+                          (branch.status ?? "active") === "active" ? (
+                            <option key={branch._id} value={branch._id}>{branch.name}</option>
+                          ) : null
                         ))}
                       </select>
                     </div>
@@ -1977,7 +1989,9 @@ export default function App() {
                   <select className="swiss-input" value={logisticsBranchId} onChange={(e) => setLogisticsBranchId(e.target.value)}>
                     <option value="">Select branch</option>
                     {dbBranches.map((branch) => (
-                      <option key={branch._id} value={branch._id}>{branch.name} ({branch.code})</option>
+                      (branch.status ?? "active") === "active" ? (
+                        <option key={branch._id} value={branch._id}>{branch.name} ({branch.code})</option>
+                      ) : null
                     ))}
                   </select>
                 </div>

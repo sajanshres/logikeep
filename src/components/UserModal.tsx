@@ -57,7 +57,9 @@ export default function UserModal({ editingUserId, newFullName, setNewFullName, 
                 <select className="swiss-input" value={newUserBranch} onChange={(e) => setNewUserBranch(e.target.value)}>
                   <option value="">All Branches</option>
                   {dbBranches.map((b) => (
-                    <option key={b._id} value={b.name}>{b.name}</option>
+                    (b.status ?? "active") === "active" ? (
+                      <option key={b._id} value={b.name}>{b.name}</option>
+                    ) : null
                   ))}
                 </select>
               </div>

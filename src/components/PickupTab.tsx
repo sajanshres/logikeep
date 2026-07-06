@@ -80,6 +80,10 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
     const itemForOrigin = selectedItemId ? dbInventory.find(i => i._id === selectedItemId) : null;
     const actualOrigin = itemForOrigin ? dbBranches.find(b => b._id === itemForOrigin.branchId) : null;
     const finalOrigin = actualOrigin || originBranch;
+    if (finalOrigin._id === destBranch._id) {
+      alert("Shipment origin and destination cannot be the same branch.");
+      return;
+    }
     await createPackage({
       senderName: matchedVendor?.name || "Client",
       senderContact: matchedVendor?.contactNumber || "",
@@ -140,7 +144,9 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
               ) : (
                 <select className="swiss-input" value={fromBranchIdx} onChange={(e) => setFromBranchIdx(parseInt(e.target.value))}>
                   {dbBranches.map((b, i) => (
-                    <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                    (b.status ?? "active") === "active" ? (
+                      <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                    ) : null
                   ))}
                 </select>
               )}
@@ -149,7 +155,9 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
               <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Destination Branch</label>
               <select className="swiss-input" value={destBranchIdx} onChange={(e) => setDestBranchIdx(parseInt(e.target.value))}>
                 {dbBranches.map((b, i) => (
-                  <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                  (b.status ?? "active") === "active" ? (
+                    <option key={b._id} value={i}>{b.name} ({b.code})</option>
+                  ) : null
                 ))}
               </select>
             </div>
