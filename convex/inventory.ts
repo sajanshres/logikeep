@@ -22,6 +22,10 @@ export const createProduct = mutation({
     updatedById: v.id("users"),
   },
   handler: async (ctx, args) => {
+    if (args.quantity < 0) throw new Error("Quantity cannot be negative.");
+    if (args.price < 0) throw new Error("Price cannot be negative.");
+    if (args.lowStockAlert < 0) throw new Error("Low stock alert cannot be negative.");
+
     const { updatedById, ...productFields } = args;
     const productId = await ctx.db.insert("inventory", {
       ...productFields,
@@ -72,11 +76,16 @@ export const removeProduct = mutation({
       .withIndex("by_product", (q) => q.eq("productId", args.productId))
       .collect();
 
-    if (movements.length > 0) {
-      throw new Error("Cannot delete a product with stock movement history. Keep it for audit records.");
+    // allow deletion of a never-traded product (only the initial stock registration)
+    if (movements.length <= 1) {
+      for (const m of movements) {
+        await ctx.db.delete(m._id);
+      }
+      await ctx.db.delete(args.productId);
+      return;
     }
 
-    await ctx.db.delete(args.productId);
+    throw new Error("This product has stock movement history and can't be deleted. Keep it for audit records.");
   },
 });
 
@@ -91,6 +100,7 @@ export const updateStock = mutation({
     updatedById: v.id("users"),
   },
   handler: async (ctx, args) => {
+    if (args.newQuantity < 0) throw new Error("Quantity cannot be negative.");
     await ctx.db.patch(args.productId, {
       quantity: args.newQuantity,
       updatedAt: Date.now(),

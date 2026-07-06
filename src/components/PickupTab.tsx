@@ -1,6 +1,11 @@
 import { useState } from "react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 
+const isValidPhone = (p: string) => {
+  const digits = p.replace(/[\s\-+]/g, "").replace(/^977/, "");
+  return /^\d{7,10}$/.test(digits);
+};
+
 type PickupTabProps = {
   vendorPickupPackages: Doc<"packages">[];
   searchQuery: string;
@@ -62,6 +67,8 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dbBranches.length || !matchedVendor) return;
+    if (parseFloat(weight) <= 0) { alert("Enter a valid weight in kg."); return; }
+    if (!isValidPhone(receiverPhone)) { alert("Enter a valid receiver phone number (7–10 digits)."); return; }
     if (fromBranchIdx === destBranchIdx) { alert("Pickup and destination branch cannot be the same"); return; }
     if (selectedItemId && (!itemQty || parseInt(itemQty, 10) < 1)) {
       alert("Please enter a valid quantity for the selected item.");
@@ -175,7 +182,7 @@ export default function PickupTab({ vendorPickupPackages, searchQuery, setSearch
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Weight (kg)</label>
-              <input type="number" step="0.1" required className="swiss-input" value={weight} onChange={(e) => setWeight(e.target.value)} />
+              <input type="number" step="0.1" min="0.1" required className="swiss-input" value={weight} onChange={(e) => setWeight(e.target.value)} />
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

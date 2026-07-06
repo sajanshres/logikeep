@@ -64,6 +64,7 @@ export default function InventoryModal({ editingProductId, newProductName, setNe
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>{editingProductId ? "Current Quantity" : "Initial Quantity"}</label>
                   <input
                     type="number"
+                    min="0"
                     required
                     className="swiss-input"
                     value={newProductQty}
@@ -72,11 +73,11 @@ export default function InventoryModal({ editingProductId, newProductName, setNe
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Low Stock Alert</label>
-                  <input type="number" required className="swiss-input" value={newProductAlert} onChange={(e) => setNewProductAlert(e.target.value)} />
+                  <input type="number" min="0" required className="swiss-input" value={newProductAlert} onChange={(e) => setNewProductAlert(e.target.value)} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Price (NPR)</label>
-                  <input type="number" step="0.01" required className="swiss-input" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
+                  <input type="number" min="0" step="0.01" required className="swiss-input" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>

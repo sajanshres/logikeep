@@ -51,6 +51,8 @@ export const create = mutation({
       throw new Error("Invalid origin or destination branch.");
     }
 
+    if (args.weight <= 0) throw new Error("Weight must be greater than zero.");
+
     const existing = await ctx.db.query("packages").collect();
     const trackingNumber = `LK-${origin.code}-${dest.code}-${String(existing.length + 1).padStart(3, "0")}`;
 

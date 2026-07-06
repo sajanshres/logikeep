@@ -28,6 +28,11 @@ import CargoTab from "./components/CargoTab";
 import VendorInventoryTab from "./components/VendorInventoryTab";
 import "./App.css";
 
+const isValidPhone = (p: string) => {
+  const digits = p.replace(/[\s\-+]/g, "").replace(/^977/, "");
+  return /^\d{7,10}$/.test(digits);
+};
+
 const SETTINGS_KEY = "logikeep-settings";
 
 type AppSettings = {
@@ -577,9 +582,17 @@ export default function App() {
         alert("Passwords do not match!");
         return;
       }
+      if (newUserPassword && newUserPassword.length < 4) {
+        alert("Password must be at least 4 characters.");
+        return;
+      }
       const emailTakenEdit = dbUsers.some(u => u._id !== editingUserId && u.email.toLowerCase() === newUserEmail.toLowerCase());
       if (emailTakenEdit) {
         alert("Another user with this email already exists.");
+        return;
+      }
+      if (newUserPhone && !isValidPhone(newUserPhone)) {
+        alert("Enter a valid phone number (7–10 digits).");
         return;
       }
       await updateUser({
@@ -597,9 +610,17 @@ export default function App() {
         alert("Passwords do not match!");
         return;
       }
+      if (newUserPassword.length < 4) {
+        alert("Password must be at least 4 characters.");
+        return;
+      }
       const emailTaken = dbUsers.some(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
       if (emailTaken) {
         alert("A user with this email already exists.");
+        return;
+      }
+      if (newUserPhone && !isValidPhone(newUserPhone)) {
+        alert("Enter a valid phone number (7–10 digits).");
         return;
       }
       await createUser({
@@ -620,6 +641,10 @@ export default function App() {
     e.preventDefault();
     const status = newBranchActive ? "active" as const : "inactive" as const;
     if (editingBranchId) {
+      if (newBranchContact && !isValidPhone(newBranchContact)) {
+        alert("Enter a valid phone number (7–10 digits).");
+        return;
+      }
       await updateBranch({
         branchId: editingBranchId,
         name: newBranchName,
@@ -631,6 +656,10 @@ export default function App() {
         status,
       });
     } else {
+      if (newBranchContact && !isValidPhone(newBranchContact)) {
+        alert("Enter a valid phone number (7–10 digits).");
+        return;
+      }
       await createBranch({
         name: newBranchName,
         code: newBranchCode.toUpperCase(),
@@ -659,10 +688,22 @@ export default function App() {
       setPackageModalTab(2);
       return;
     }
+    if (senderPhone && !isValidPhone(senderPhone)) {
+      alert("Enter a valid sender phone number (7–10 digits).");
+      return;
+    }
+    if (receiverPhone && !isValidPhone(receiverPhone)) {
+      alert("Enter a valid receiver phone number (7–10 digits).");
+      return;
+    }
     const dimensions = packageDimL && packageDimW && packageDimH
       ? `${packageDimL} x ${packageDimW} x ${packageDimH} cm`
       : undefined;
     if (editingPackageId) {
+      if (parseFloat(packageWeight) <= 0) {
+        alert("Enter a valid weight in kg.");
+        return;
+      }
       // don't allow reassigning client if package has linked inventory
       if (packageVendorId) {
         const pkg = dbPackages.find(p => p._id === editingPackageId);
@@ -691,6 +732,10 @@ export default function App() {
         assignedVendorId: packageVendorId || undefined,
       });
     } else {
+      if (parseFloat(packageWeight) <= 0) {
+        alert("Enter a valid weight in kg.");
+        return;
+      }
       if (dbBranches.length < 1) return;
       if (packageItemId && (!packageItemQty || parseInt(packageItemQty, 10) < 1)) {
         alert("Please enter a valid quantity for the selected item.");
@@ -739,6 +784,10 @@ export default function App() {
         alert("Another client with this email already exists.");
         return;
       }
+      if (newVendorPhone && !isValidPhone(newVendorPhone)) {
+        alert("Enter a valid phone number (7–10 digits).");
+        return;
+      }
       await updateVendor({
         vendorId: editingVendorId,
         name: newVendorName,
@@ -753,6 +802,10 @@ export default function App() {
       const emailTaken = dbVendors.some(v => v.email.toLowerCase() === newVendorEmail.toLowerCase());
       if (emailTaken) {
         alert("A client with this email already exists.");
+        return;
+      }
+      if (newVendorPhone && !isValidPhone(newVendorPhone)) {
+        alert("Enter a valid phone number (7–10 digits).");
         return;
       }
       await createVendor({
@@ -784,6 +837,17 @@ export default function App() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loggedInDbUser) return;
+    if (!newProductName.trim() || !newProductSku.trim()) {
+      alert("Product name and SKU cannot be empty or whitespace.");
+      return;
+    }
+    const qty = parseInt(newProductQty) || 0;
+    const price = parseFloat(newProductPrice) || 0;
+    const alertLevel = parseInt(newProductAlert) || 0;
+    if (qty < 0 || price < 0 || alertLevel < 0) {
+      alert("Quantity, price, and alert level cannot be negative.");
+      return;
+    }
     if (dbVendors.length < 1) {
       alert("Add at least one vendor first.");
       return;
@@ -1173,6 +1237,11 @@ export default function App() {
     const shipment = dbPackages.find((pkg) => pkg._id === logisticsModal.packageId);
     if (!shipment) return;
 
+    if (logisticsDriverPhone && !isValidPhone(logisticsDriverPhone)) {
+      alert("Enter a valid driver phone number (7–10 digits).");
+      return;
+    }
+
     const selectedBranchId = logisticsBranchId ? (logisticsBranchId as Id<"branches">) : undefined;
     const currentBranchId = logisticsModal.action === "forward"
       ? shipment.currentBranchId
@@ -1526,6 +1595,7 @@ export default function App() {
         {activeTab === "users" && (
           <UsersTab
             dbUsers={dbUsers}
+            loggedInDbUser={loggedInDbUser}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             roleFilter={roleFilter}

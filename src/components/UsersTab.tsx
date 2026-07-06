@@ -7,6 +7,7 @@ type ModalKind = "user" | "branch" | "package" | "vendor" | "inventory" | "trans
 
 type UsersTabProps = {
   dbUsers: UserRow[];
+  loggedInDbUser: { _id: Id<"users">; role: string } | null | undefined;
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   roleFilter: string;
@@ -19,7 +20,7 @@ type UsersTabProps = {
   toggleUserStatus: (id: Id<"users">, current: boolean) => void;
 };
 
-export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, roleFilter, setRoleFilter, roleLabel, setModalOpen, openEditUser, removeUser, resetUserForm, toggleUserStatus }: UsersTabProps) {
+export default function UsersTab({ dbUsers, loggedInDbUser, searchQuery, setSearchQuery, roleFilter, setRoleFilter, roleLabel, setModalOpen, openEditUser, removeUser, resetUserForm, toggleUserStatus }: UsersTabProps) {
   return (
           <div className="swiss-card wireframe-panel">
             <div className="module-toolbar">
@@ -70,6 +71,15 @@ export default function UsersTab({ dbUsers, searchQuery, setSearchQuery, roleFil
                           label={u.name}
                           onEdit={() => openEditUser(u)}
                           onDelete={async () => {
+                            if (u._id === loggedInDbUser?._id) {
+                              alert("You can't delete the account you're logged in with.");
+                              return;
+                            }
+                            const adminCount = dbUsers.filter(u => u.role === "admin").length;
+                            if (u.role === "admin" && adminCount <= 1) {
+                              alert("At least one admin account is required.");
+                              return;
+                            }
                             if (confirm(`Remove user ${u.name}?`)) await removeUser({ userId: u._id });
                           }}
                         />

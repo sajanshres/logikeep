@@ -101,21 +101,21 @@ export default function PackageModal({ editingPackageId, packageModalTab, setPac
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Weight (kg)</label>
-                      <input type="number" step="0.1" required className="swiss-input" value={packageWeight} onChange={(e) => setPackageWeight(e.target.value)} />
+                      <input type="number" step="0.1" min="0.1" required className="swiss-input" value={packageWeight} onChange={(e) => setPackageWeight(e.target.value)} />
                     </div>
                   </div>
                   <div className="grid-3">
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Length (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="L" value={packageDimL} onChange={(e) => setPackageDimL(e.target.value)} />
+                      <input type="number" step="0.1" min="0.1" required className="swiss-input" placeholder="L" value={packageDimL} onChange={(e) => setPackageDimL(e.target.value)} />
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Width (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="W" value={packageDimW} onChange={(e) => setPackageDimW(e.target.value)} />
+                      <input type="number" step="0.1" min="0.1" required className="swiss-input" placeholder="W" value={packageDimW} onChange={(e) => setPackageDimW(e.target.value)} />
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <label style={{ fontSize: 11, color: "var(--title-color)", fontWeight: 600 }}>Height (cm)</label>
-                      <input type="number" step="0.1" required className="swiss-input" placeholder="H" value={packageDimH} onChange={(e) => setPackageDimH(e.target.value)} />
+                      <input type="number" step="0.1" min="0.1" required className="swiss-input" placeholder="H" value={packageDimH} onChange={(e) => setPackageDimH(e.target.value)} />
                     </div>
                   </div>
                   <div className="grid-2">

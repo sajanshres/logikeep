@@ -128,7 +128,7 @@ export default function Inventory({
                                       setTxProductId(null);
                                     }
                                   } catch (error) {
-                                    alert(error instanceof Error ? error.message : "Could not delete this product.");
+                                    alert("This product has stock movement history and can't be deleted. Keep it for audit records.");
                                   }
                                 }
                               }}
