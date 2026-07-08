@@ -127,7 +127,7 @@ export default function Inventory({
                                     if (txProductId === item._id) {
                                       setTxProductId(null);
                                     }
-                                  } catch (error) {
+                                  } catch {
                                     alert("This product has stock movement history and can't be deleted. Keep it for audit records.");
                                   }
                                 }

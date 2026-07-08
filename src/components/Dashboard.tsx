@@ -32,6 +32,22 @@ export default function Dashboard({
   branchName,
   statusLabel,
 }: DashboardProps) {
+  const pieSegments: { x1: number; y1: number; x2: number; y2: number; large: number; color: string }[] = [];
+  let angle = 0;
+  for (const slice of directionSlices) {
+    const pct = slice.count / directionTotal;
+    const startAngle = angle;
+    angle += pct * 360;
+    const endAngle = angle;
+    pieSegments.push({
+      x1: 60 + 50 * Math.cos((Math.PI * startAngle) / 180),
+      y1: 60 + 50 * Math.sin((Math.PI * startAngle) / 180),
+      x2: 60 + 50 * Math.cos((Math.PI * endAngle) / 180),
+      y2: 60 + 50 * Math.sin((Math.PI * endAngle) / 180),
+      large: pct > 0.5 ? 1 : 0,
+      color: slice.color,
+    });
+  }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {role === "Manager" ? (
@@ -134,27 +150,13 @@ export default function Dashboard({
           <h3 className="swiss-title" style={{ fontSize: 14, borderBottom: "1px solid var(--border-color)", paddingBottom: 10, marginBottom: 16, textTransform: "uppercase" }}>Shipments by Direction</h3>
           <div className="pie-wrap">
             <svg width="120" height="120" viewBox="0 0 120 120">
-              {(() => {
-                let angle = 0;
-                return directionSlices.map((slice, i) => {
-                  const pct = slice.count / directionTotal;
-                  const startAngle = angle;
-                  angle += pct * 360;
-                  const endAngle = angle;
-                  const x1 = 60 + 50 * Math.cos((Math.PI * startAngle) / 180);
-                  const y1 = 60 + 50 * Math.sin((Math.PI * startAngle) / 180);
-                  const x2 = 60 + 50 * Math.cos((Math.PI * endAngle) / 180);
-                  const y2 = 60 + 50 * Math.sin((Math.PI * endAngle) / 180);
-                  const large = pct > 0.5 ? 1 : 0;
-                  return (
-                    <path
-                      key={i}
-                      d={`M 60 60 L ${x1} ${y1} A 50 50 0 ${large} 1 ${x2} ${y2} Z`}
-                      fill={slice.color}
-                    />
-                  );
-                });
-              })()}
+              {pieSegments.map((seg, i) => (
+                <path
+                  key={i}
+                  d={`M 60 60 L ${seg.x1} ${seg.y1} A 50 50 0 ${seg.large} 1 ${seg.x2} ${seg.y2} Z`}
+                  fill={seg.color}
+                />
+              ))}
             </svg>
             <div className="pie-legend">
               {directionSlices.map((slice) => (

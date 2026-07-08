@@ -35,6 +35,22 @@ const isValidPhone = (p: string) => {
 
 const SETTINGS_KEY = "logikeep-settings";
 
+function loadSettings(): Partial<AppSettings> {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw) as AppSettings;
+  } catch { /* ignore */ }
+  return {};
+}
+
+function loadReportSettings() {
+  try {
+    const raw = localStorage.getItem("logikeep-reports");
+    if (raw) return JSON.parse(raw) as { reportDateFrom?: string; reportDateTo?: string; reportBranch?: string; reportPartner?: string };
+  } catch { /* ignore */ }
+  return {};
+}
+
 type AppSettings = {
   portalName: string;
   defaultBranch: string;
@@ -117,8 +133,8 @@ export default function App() {
   const [loggedInUser, setLoggedInUser] = useState<SessionUser | null>(null);
 
   // Login form
-  const [loginEmail, setLoginEmail] = useState<string>("admin@logikeep.com.np");
-  const [loginPassword, setLoginPassword] = useState<string>("admin123");
+  const [loginEmail, setLoginEmail] = useState<string>("");
+  const [loginPassword, setLoginPassword] = useState<string>("");
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
 
   // Active tab
@@ -201,23 +217,25 @@ export default function App() {
   // Settings & reports
   const [settingsTab, setSettingsTab] = useState<"general" | "security" | "notifications">("general");
   const [reportTab, setReportTab] = useState<"shipments" | "inventory" | "analytics">("shipments");
-  const [reportDateFrom, setReportDateFrom] = useState<string>("");
-  const [reportDateTo, setReportDateTo] = useState<string>("");
-  const [reportBranch, setReportBranch] = useState<string>("All");
-  const [reportPartner, setReportPartner] = useState<string>("All");
+  const savedReports = loadReportSettings();
+  const [reportDateFrom, setReportDateFrom] = useState<string>(savedReports.reportDateFrom ?? "");
+  const [reportDateTo, setReportDateTo] = useState<string>(savedReports.reportDateTo ?? "");
+  const [reportBranch, setReportBranch] = useState<string>(savedReports.reportBranch ?? "All");
+  const [reportPartner, setReportPartner] = useState<string>(savedReports.reportPartner ?? "All");
   const [editingUserId, setEditingUserId] = useState<Id<"users"> | null>(null);
   const [editingBranchId, setEditingBranchId] = useState<Id<"branches"> | null>(null);
   const [editingVendorId, setEditingVendorId] = useState<Id<"vendors"> | null>(null);
   const [editingPackageId, setEditingPackageId] = useState<Id<"packages"> | null>(null);
   const [editingProductId, setEditingProductId] = useState<Id<"inventory"> | null>(null);
 
-  const [portalName, setPortalName] = useState<string>("LogiKeep");
-  const [defaultBranch, setDefaultBranch] = useState<string>("");
-  const [timezone, setTimezone] = useState<string>("Asia/Kathmandu");
-  const [notifyLowStock, setNotifyLowStock] = useState<boolean>(true);
-  const [notifyDelivery, setNotifyDelivery] = useState<boolean>(true);
-  const [notifyBooking, setNotifyBooking] = useState<boolean>(true);
-  const [notifyWeekly, setNotifyWeekly] = useState<boolean>(false);
+  const saved = loadSettings();
+  const [portalName, setPortalName] = useState<string>(saved.portalName ?? "LogiKeep");
+  const [defaultBranch, setDefaultBranch] = useState<string>(saved.defaultBranch ?? "");
+  const [timezone, setTimezone] = useState<string>(saved.timezone ?? "Asia/Kathmandu");
+  const [notifyLowStock, setNotifyLowStock] = useState<boolean>(saved.notifyLowStock ?? true);
+  const [notifyDelivery, setNotifyDelivery] = useState<boolean>(saved.notifyDelivery ?? true);
+  const [notifyBooking, setNotifyBooking] = useState<boolean>(saved.notifyBooking ?? true);
+  const [notifyWeekly, setNotifyWeekly] = useState<boolean>(saved.notifyWeekly ?? false);
   const [settingsSaved, setSettingsSaved] = useState<boolean>(false);
   const [securityCurrent, setSecurityCurrent] = useState<string>("");
   const [securityNew, setSecurityNew] = useState<string>("");
@@ -262,37 +280,6 @@ export default function App() {
   const updateStock = useMutation(api.inventory.updateStock);
   const backfillPhase3 = useMutation(api.migrate.backfillPhase3);
   const updateStatus = useMutation(api.packages.updateStatus);
-
-  useEffect(() => {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return;
-    try {
-      const saved = JSON.parse(raw) as AppSettings;
-      setPortalName(saved.portalName || "LogiKeep");
-      setDefaultBranch(saved.defaultBranch || "");
-      setTimezone(saved.timezone || "Asia/Kathmandu");
-      setNotifyLowStock(saved.notifyLowStock ?? true);
-      setNotifyDelivery(saved.notifyDelivery ?? true);
-      setNotifyBooking(saved.notifyBooking ?? true);
-      setNotifyWeekly(saved.notifyWeekly ?? false);
-    } catch {
-      // just catch errors if parsing fails
-    }
-  }, []);
-
-  useEffect(() => {
-    const raw = localStorage.getItem("logikeep-reports");
-    if (!raw) return;
-    try {
-      const saved = JSON.parse(raw) as { reportDateFrom?: string; reportDateTo?: string; reportBranch?: string; reportPartner?: string };
-      if (saved.reportDateFrom) setReportDateFrom(saved.reportDateFrom);
-      if (saved.reportDateTo) setReportDateTo(saved.reportDateTo);
-      if (saved.reportBranch) setReportBranch(saved.reportBranch);
-      if (saved.reportPartner) setReportPartner(saved.reportPartner);
-    } catch {
-      // ignore errors
-    }
-  }, []);
 
   useEffect(() => {
     localStorage.setItem("logikeep-reports", JSON.stringify({ reportDateFrom, reportDateTo, reportBranch, reportPartner }));
@@ -645,6 +632,11 @@ export default function App() {
         alert("Enter a valid phone number (7–10 digits).");
         return;
       }
+      const codeTakenEdit = dbBranches.some(b => b._id !== editingBranchId && b.code.toUpperCase() === newBranchCode.trim().toUpperCase());
+      if (codeTakenEdit) {
+        alert("A branch with this code already exists.");
+        return;
+      }
       await updateBranch({
         branchId: editingBranchId,
         name: newBranchName,
@@ -658,6 +650,11 @@ export default function App() {
     } else {
       if (newBranchContact && !isValidPhone(newBranchContact)) {
         alert("Enter a valid phone number (7–10 digits).");
+        return;
+      }
+      const codeTaken = dbBranches.some(b => b.code.toUpperCase() === newBranchCode.trim().toUpperCase());
+      if (codeTaken) {
+        alert("A branch with this code already exists.");
         return;
       }
       await createBranch({
@@ -853,6 +850,11 @@ export default function App() {
     const alertLevel = parseInt(newProductAlert) || 0;
     if (qty < 0 || price < 0 || alertLevel < 0) {
       alert("Quantity, price, and alert level cannot be negative.");
+      return;
+    }
+    const skuTaken = dbInventory.some(p => p._id !== editingProductId && p.sku.toLowerCase() === newProductSku.trim().toLowerCase());
+    if (skuTaken) {
+      alert("A product with this SKU already exists.");
       return;
     }
     if (dbVendors.length < 1) {
