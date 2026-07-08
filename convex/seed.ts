@@ -257,7 +257,7 @@ export const seedDatabase = mutation({
       productId: handmadeCarpetsId,
       type: "purchase",
       quantityChanged: 30,
-      notes: "Received Gorkha Garments shipment",
+      notes: "Received Handmade Carpets stock from Himalayan Handicrafts",
       updatedById: adminUserId,
       timestamp: Date.now() - 4 * day,
     });
@@ -322,10 +322,33 @@ export const seedDatabase = mutation({
       status: "in_transit",
       originBranchId: ktmId,
       destinationBranchId: dhnId,
-      currentBranchId: ktmId,
+      currentBranchId: dhnId,
       assignedVendorId: himalayanHandicraftsId,
+      driverName: "Ramesh Limbu",
+      vehicleNumber: "KO 1 KHA 4455",
+      driverPhone: "9807654321",
       createdAt: Date.now() - 3600000 * 12, // 12 hours ago
       updatedAt: Date.now() - 3600000 * 6,
+    });
+
+    const pkgDharanOutId = await ctx.db.insert("packages", {
+      trackingNumber: "LK-DHN-PKR-002A",
+      senderName: "Sunita Rai",
+      senderContact: "9841122334",
+      senderAddress: "Bhanuchowk, Dharan",
+      receiverName: "Mohan Gurung",
+      receiverAddress: "Lakeside, Pokhara",
+      receiverContact: "9856233445",
+      packageType: "Packet",
+      weight: 1.5,
+      dimensions: "20 x 15 x 5 cm",
+      description: "Handmade jewelry",
+      status: "booked",
+      originBranchId: dhnId,
+      destinationBranchId: pkrId,
+      currentBranchId: dhnId,
+      createdAt: Date.now() - 3600000 * 3,
+      updatedAt: Date.now() - 3600000 * 3,
     });
 
     const pkg3Id = await ctx.db.insert("packages", {
@@ -472,6 +495,14 @@ export const seedDatabase = mutation({
       locationBranchId: pkrId,
       details: "Shipment successfully delivered to Gopal Adhikari",
       timestamp: Date.now() - 3600000 * 10,
+      updatedById: adminUserId,
+    });
+    await ctx.db.insert("movementLogs", {
+      packageId: pkgDharanOutId,
+      status: "booked",
+      locationBranchId: dhnId,
+      details: "Shipment booked at Dharan Branch",
+      timestamp: Date.now() - 3600000 * 3,
       updatedById: adminUserId,
     });
 

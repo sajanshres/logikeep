@@ -741,6 +741,13 @@ export default function App() {
         alert("Please enter a valid quantity for the selected item.");
         return;
       }
+      if (packageItemId) {
+        const itemForStock = dbInventory.find(i => i._id === packageItemId);
+        if (itemForStock && (parseInt(packageItemQty, 10) || 0) > itemForStock.quantity) {
+          alert(`Insufficient stock for ${itemForStock.productName}. Available: ${itemForStock.quantity}.`);
+          return;
+        }
+      }
       const destBranch = dbBranches[assignBranchIdx] || dbBranches[0];
       const originBranch = dbBranches[0];
       const linkedItem = packageItemId ? dbInventory.find(i => i._id === packageItemId) : null;
